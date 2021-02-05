@@ -28,3 +28,17 @@ Le programme est contenu das dans les parties non utilisés ainsi que dans l'EEP
 ### Instructions
 
 <http://www.science.smith.edu/dftwiki/images/9/9e/CSC270_Assembly_Instructions.pdf>
+
+## TODO
+- Assembleur
+    - Conversion du code en opcode
+    - Lecture de fichier
+    - Ajoute des constantes (equ)
+    - Ajout des ports
+
+- Execution
+    - Affichage du contenue
+    - Execution instruction par instruction
+
+- Tests
+    - Programme de tests afin de tester le programme de tous les côtés

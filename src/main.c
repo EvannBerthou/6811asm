@@ -22,24 +22,39 @@ typedef struct {
     uint8_t ram[MAX_RAM];
 } cpu;
 
-uint16_t read_register(cpu *cpu, register_type rt) {
-    switch(rt) {
-    case ACC_A: return cpu->d & 0xFF00;
-    case ACC_B: return cpu->d & 0x00FF;
-    case ACC_D: return cpu->d;
-    default: return 0;
+const char *register_name(register_type rt) {
+    switch (rt) {
+    case ACC_A: return "ACC A";
+    case ACC_B: return "ACC B";
+    case ACC_D: return "ACC D";
+    default: return "Undetermined";
     }
+}
+
+uint16_t read_register(cpu *cpu, register_type rt) {
+    uint16_t value = 0;
+    switch (rt) {
+    case ACC_A: value = cpu->d & 0xFF00; break;
+    case ACC_B: value = cpu->d & 0x00FF; break;
+    case ACC_D: value = cpu->d; break;
+    default: break;
+    }
+    printf("Reading %s: %04x\n", register_name(rt), value);
+    return value;
 }
 
 void write_register(cpu *cpu, register_type rt, uint16_t value) {
     // Only keep the highest and lowest 8 bits for acc_a and acc_b respectively.
     // Keep the value as it is for acc_d.
-    switch(rt) {
-    case ACC_A: cpu->d = (cpu->d & 0x00FF) | (value << 8); break;
-    case ACC_B: cpu->d = (cpu->d & 0xFF00) | (value & 0x00FF) ; break;
-    case ACC_D: cpu->d = value; break;
-    default: return;
+    uint16_t result = 0;
+    switch (rt) {
+    case ACC_A: result = (cpu->d & 0x00FF) | (value << 8); break;
+    case ACC_B: result = (cpu->d & 0xFF00) | (value & 0x00FF) ; break;
+    case ACC_D: result = value; break;
+    default: break;
     }
+    printf("Writing %s: %04x\n", register_name(rt), result);
+    cpu->d = result;
 }
 
 void write_memory(cpu *cpu, uint16_t pos, uint8_t value) {
@@ -59,11 +74,11 @@ int main() {
     printf("Registers\n");
     write_register(&cpu, ACC_B, 0x66);
     write_register(&cpu, ACC_A, 0x33);
-    printf("%04x\n", read_register(&cpu, ACC_A));
-    printf("%04x\n", read_register(&cpu, ACC_B));
-    printf("%04x\n", read_register(&cpu, ACC_D));
+    read_register(&cpu, ACC_A);
+    read_register(&cpu, ACC_B);
+    read_register(&cpu, ACC_D);
     write_register(&cpu, ACC_A, 0x36);
-    printf("%04x\n", read_register(&cpu, ACC_D));
+    read_register(&cpu, ACC_D);
 
     printf("\nMemory\n");
     write_memory(&cpu, 0x0, 0x38);
