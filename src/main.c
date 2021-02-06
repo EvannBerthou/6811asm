@@ -90,6 +90,17 @@ uint8_t read_memory(cpu *cpu, uint16_t pos) {
     return cpu->memory[pos];
 }
 
+void load_program(cpu *cpu) {
+    const int org = 0xC000;
+    write_memory(org,
+}
+
+
+void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
+    for (uint16_t i = 0; i < len; ++i) {
+        printf("%04x: %02x\n", i, cpu->memory[from + i]);
+    }
+}
 
 int main() {
     cpu cpu = {0};
@@ -109,5 +120,7 @@ int main() {
 
     write_memory(&cpu, 0xFFFF, 0x87);
     read_memory(&cpu, 0xFFFF);
+
+    print_memory_range(&cpu, 0xC000, 10);
 }
 
