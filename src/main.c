@@ -46,7 +46,13 @@ instruction instructions[] = {
         .codes = {[IMMEDIATE]=0xC6, [DIRECT]=0xD6, [EXTENDED]=0xF6},
         .operands = { IMMEDIATE, EXTENDED, DIRECT }
     },
+    {
+        .names = {"aba"}, .name_count = 1,
+        .codes = {[INHERENT]=0x1B},
+        .operands = { INHERENT }
+    },
 };
+#define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
 
 typedef enum {
@@ -106,13 +112,13 @@ void INST_LDA_EXT(cpu *cpu) {
 void INST_LDB_IMM(cpu *cpu) {
     uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
     printf("Loading " FMT8 " in BCC B\n", value);
-    cpu->a = value;
+    cpu->b = value;
 }
 
 void INST_LDB_DIR(cpu *cpu) {
     uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
     printf("Loading value at address " FMT8 " (= " FMT8 ") in BCC B\n", addr, cpu->memory[addr]);
-    cpu->a = cpu->memory[addr]; // Get value the operand is poiting at
+    cpu->b = cpu->memory[addr]; // Get value the operand is poiting at
 }
 
 void INST_LDB_EXT(cpu *cpu) {
@@ -120,8 +126,14 @@ void INST_LDB_EXT(cpu *cpu) {
     uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
     uint16_t addr = (b0 << 8) | b1;
     printf("Loading value at address " FMT16 " (= " FMT8 ") in BCC B\n", addr, cpu->memory[addr]);
-    cpu->a = cpu->memory[addr];
+    cpu->b = cpu->memory[addr];
 }
+
+void INST_ABA(cpu *cpu) {
+    uint8_t result = (cpu->a + cpu->b) & 0xFF;
+    cpu->a = result;
+}
+
 
 /*****************************
 *           Utils            *
@@ -209,7 +221,7 @@ uint8_t part_count(const char *str) {
 }
 
 instruction * opcode_str_to_hex(const char *str) {
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < INSTRUCTION_COUNT; ++i) {
         instruction *op = &instructions[i];
         for (int j = 0; j < op->name_count; ++j) {
             if (strcmp(str, op->names[j]) == 0) {
@@ -244,9 +256,9 @@ mnemonic line_to_mnemonic(const char *line) {
         return nop_mnemonic;
     }
 
-    uint8_t need_operand = inst->operands[0] != NONE;
+    uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
     if (need_operand != (nb_parts - 1)) { // need an operand but none were given
-        printf("This instruction requires %d operand but %d recieved\n", need_operand, nb_parts - 1);
+        printf("%s instruction requires %d operand but %d recieved\n", part, need_operand, nb_parts - 1);
         return nop_mnemonic;
     }
     mnemonic result = {0};
@@ -295,13 +307,13 @@ void add_mnemonic_to_memory(cpu *cpu, mnemonic *m) {
 void load_program(cpu *cpu) {
     const int org = 0xC000; // TODO: SHOULD BE DETERMINED IN THE CODE
     cpu->pc = org;
-    mnemonic m1 = line_to_mnemonic("ldaa $20\n");
+    mnemonic m1 = line_to_mnemonic("ldaa #20\n");
     add_mnemonic_to_memory(cpu, &m1);
 
-    mnemonic m2 = line_to_mnemonic("ldb $3000\n");
+    mnemonic m2 = line_to_mnemonic("ldb #30\n");
     add_mnemonic_to_memory(cpu, &m2);
 
-    mnemonic m3 = line_to_mnemonic("nop");
+    mnemonic m3 = line_to_mnemonic("aba");
     add_mnemonic_to_memory(cpu, &m3);
     cpu->pc = org;
 }
@@ -325,6 +337,10 @@ int main() {
     instr_func[0x86] = INST_LDA_IMM;
     instr_func[0x96] = INST_LDA_DIR;
     instr_func[0xB6] = INST_LDA_EXT;
+    instr_func[0xC6] = INST_LDB_IMM;
+    instr_func[0xD6] = INST_LDB_DIR;
+    instr_func[0xF6] = INST_LDB_EXT;
+    instr_func[0x1B] = INST_ABA;
     cpu c = {0};
 
     printf("Registers\n");
