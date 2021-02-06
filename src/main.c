@@ -21,7 +21,8 @@ typedef enum {
 } operand_type;
 
 typedef struct {
-    const char *name;
+    char *names[2]; // Some instructions have aliases like lda = ldaa
+    uint8_t name_count;
     uint8_t codes[OPERAND_TYPE_COUNT];
     operand_type operands[OPERAND_TYPE_COUNT];
 } instruction;
@@ -36,10 +37,15 @@ mnemonic nop_mnemonic = {.opcode = 0x1, .operand = 0, .operand_type = NONE};
 
 instruction instructions[] = {
     {
-        .name = "ldaa",
+        .names = {"ldaa", "lda"}, .name_count = 2,
         .codes = {[IMMEDIATE]=0x86, [DIRECT]=0x96, [EXTENDED]=0xB6},
         .operands = { IMMEDIATE, EXTENDED, DIRECT }
-    }
+    },
+    {
+        .names = {"ldab", "ldb"}, .name_count = 2,
+        .codes = {[IMMEDIATE]=0xC6, [DIRECT]=0xD6, [EXTENDED]=0xF6},
+        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+    },
 };
 
 
@@ -68,6 +74,10 @@ typedef struct {
     uint8_t memory[MAX_MEMORY];
 } cpu;
 
+/*****************************
+*        Instructions        *
+*****************************/
+
 void INST_NOP(cpu *cpu) {
     (void) cpu;
     // DOES NOTHING
@@ -92,6 +102,30 @@ void INST_LDA_EXT(cpu *cpu) {
     printf("Loading value at address " FMT16 " (= " FMT8 ") in ACC A\n", addr, cpu->memory[addr]);
     cpu->a = cpu->memory[addr];
 }
+
+void INST_LDB_IMM(cpu *cpu) {
+    uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
+    printf("Loading " FMT8 " in BCC B\n", value);
+    cpu->a = value;
+}
+
+void INST_LDB_DIR(cpu *cpu) {
+    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    printf("Loading value at address " FMT8 " (= " FMT8 ") in BCC B\n", addr, cpu->memory[addr]);
+    cpu->a = cpu->memory[addr]; // Get value the operand is poiting at
+}
+
+void INST_LDB_EXT(cpu *cpu) {
+    uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
+    uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
+    uint16_t addr = (b0 << 8) | b1;
+    printf("Loading value at address " FMT16 " (= " FMT8 ") in BCC B\n", addr, cpu->memory[addr]);
+    cpu->a = cpu->memory[addr];
+}
+
+/*****************************
+*           Utils            *
+*****************************/
 
 void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
     for (uint16_t i = 0; i < len; ++i) {
@@ -177,8 +211,10 @@ uint8_t part_count(const char *str) {
 instruction * opcode_str_to_hex(const char *str) {
     for (int i = 0; i < 1; ++i) {
         instruction *op = &instructions[i];
-        if (strcmp(str, op->name) == 0) {
-            return op;
+        for (int j = 0; j < op->name_count; ++j) {
+            if (strcmp(str, op->names[j]) == 0) {
+                return op;
+            }
         }
     }
     return NULL;
@@ -262,7 +298,7 @@ void load_program(cpu *cpu) {
     mnemonic m1 = line_to_mnemonic("ldaa $20\n");
     add_mnemonic_to_memory(cpu, &m1);
 
-    mnemonic m2 = line_to_mnemonic("ldaa $3000\n");
+    mnemonic m2 = line_to_mnemonic("ldb $3000\n");
     add_mnemonic_to_memory(cpu, &m2);
 
     mnemonic m3 = line_to_mnemonic("nop");
