@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #define MAX_MEMORY (1 << 16)
 #define FMT8 "0x%02x"
@@ -122,7 +123,41 @@ void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
     }
 }
 
+void clear_memory(cpu *cpu) {
+    int i = MAX_MEMORY;
+    while (i--) {
+        cpu->memory[i] = 0x0;
+    }
+}
+
+void load_program(cpu *cpu) {
+    const int org = 0xC000; // TODO: SHOULD BE DETERMINED IN THE CODE
+    cpu->pc = org;
+    cpu->memory[cpu->pc++] = 0x86;
+    cpu->memory[cpu->pc++] = 0x30;
+    cpu->memory[cpu->pc++] = 0x96;
+    cpu->memory[cpu->pc++] = 0x0;
+    cpu->pc = org;
+}
+
+void (*instr_func[0xFF]) (cpu *cpu) = {0};
+
+void exec_program(cpu *cpu) {
+    while (cpu->memory[cpu->pc] != 0x0) {
+        uint8_t inst = cpu->memory[cpu->pc];
+        if (instr_func[inst] != NULL) {
+            (*instr_func[inst])(cpu); // Call the function with this opcode
+        } else {
+            printf(FMT8" is an undefined (or not implemented) opcode\n", inst);
+        }
+        cpu->pc++;
+    }
+}
+
 int main() {
+    instr_func[0x86] = INST_LDA_IMM;
+    instr_func[0x96] = INST_LDA_DIR;
+    instr_func[0xB6] = INST_LDA_EXT;
     cpu cpu = {0};
 
     printf("Registers\n");
@@ -163,5 +198,15 @@ int main() {
     cpu.pc = 0xC000;
     INST_LDA_EXT(&cpu);
     printf("ACC A: %02x\n", cpu.a);
+
+    clear_memory(&cpu);
+
+    printf("\nLoad Program\n");
+    load_program(&cpu);
+    write_memory(&cpu, 0x0, 0xFF);
+    print_memory_range(&cpu, 0xC000, 10);
+
+    printf("\nExec program\n");
+    exec_program(&cpu);
 }
 
