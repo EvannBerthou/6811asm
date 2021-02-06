@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
+#include <ctype.h>
 
 #define MAX_MEMORY (1 << 16)
 #define FMT8 "0x%02x"
@@ -10,9 +12,12 @@ typedef enum {
     IMMEDIATE,
     EXTENDED,
     DIRECT,
-    INDEXDED,
+    INDEXDED_X,
+    INDEXDED_Y,
     INHERENT,
-    RELATIVE
+    RELATIVE,
+    NONE,
+    OPERAND_TYPE_COUNT
 } operand_type;
 
 typedef struct {
@@ -25,9 +30,24 @@ typedef struct {
 
 typedef struct {
     const char *name;
-    uint8_t codes;
-    operand operands;
-} opcode;
+    uint8_t codes[OPERAND_TYPE_COUNT];
+    operand_type operands[OPERAND_TYPE_COUNT];
+} instruction;
+
+typedef struct {
+    uint8_t opcode;
+    uint16_t operand;
+    operand_type operand_type;
+} mnemonic;
+
+instruction instructions[] = {
+    {
+        .name = "ldaa",
+        .codes = {[IMMEDIATE]=0x86, [DIRECT]=0x96, [EXTENDED]=0xB6},
+        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+    }
+};
+
 
 typedef enum {
     ACC_A,
@@ -147,40 +167,70 @@ uint8_t part_count(const char *str) {
 
 uint8_t instr_operand_count[0xFF] = {0};
 
-uint8_t opcode_str_to_hex(const char *str) {
-    (void) str;
-    return 0x0;
+instruction * opcode_str_to_hex(const char *str) {
+    for (int i = 0; i < 1; ++i) {
+        instruction *op = &instructions[i];
+        if (strcmp(str, op->name) == 0) {
+            return op;
+        }
+    }
+    return NULL;
 }
 
-opcode line_to_instruction(const char *line) {
+mnemonic line_to_mnemonic(const char *line) {
     uint8_t nb_parts = part_count(line);
     if (nb_parts > 2) {
         printf("Too many operands\n");
-        return (opcode) {0};
+        return (mnemonic) {0};
     }
 
     // Get instruction name
     char part[6] = {0}; // Longest instruction is BRCLR
-    uint8_t part_len = 0;
-    for (; line[part_len] != ' ' && line[part_len] != '\0' && part_len < 6; ++part_len) {
-        part[part_len] = line[part_len];
+    int i; // index of part to write
+    for (i = 0; *line != ' ' && *line != '\0' && i < 6; ++i, ++line) {
+        part[i] = *line;
     }
-    if (part_len > 5) {
+    if (i > 5) {
         printf("Instruction is too long\n");
     }
 
-    uint8_t op = opcode_str_to_hex(part);
+    instruction *inst = opcode_str_to_hex(part);
 
-    uint8_t need_operand = instr_operand_count[op];
+    uint8_t need_operand = inst->operands[0] != NONE;
     if (need_operand != (nb_parts - 1)) { // need an operand but none were given
         printf("This instruction requires %d operand but %d recieved\n", need_operand, nb_parts - 1);
-        return (opcode) {0};
+        return (mnemonic) {0};
     }
+    mnemonic result = {0};
+    if (need_operand) {
+        char operand_str[6] = {0};
+        while (*line == ' ') line++; // skip all spaces until the next character
+        // Copy operand to operand_str
+        for (int i = 0; i < 6 && *line != '\0' && *line != ' '; ++i, ++line) operand_str[i] = *line;
 
-    return (opcode) {0};
+        // Find where the number starts (skip # and $)
+        const char *number_part = operand_str;
+        while (!isdigit(*number_part)) number_part++;
+        // Convert to a number
+        char *end;
+        long l = strtol(number_part, &end, 16);
+        if (l == 0 && number_part == end) {
+            printf("Error while parsing the operand %s\n", operand_str);
+            return (mnemonic) {0};
+        }
+        uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
+        result.operand = operand_value;
+        // Change operand type based on prefix and operand_value
+        if (operand_str[0] == '#') result.operand_type = IMMEDIATE;
+        if (operand_str[0] == '$' && operand_value <= 0xFF) result.operand_type = DIRECT;
+        if (operand_str[0] == '$' && operand_value >  0xFF) result.operand_type = EXTENDED;
+    }
+    result.opcode = inst->codes[inst->operands[result.operand_type]];
+
+    return result;
 }
 
-void add_opcode_to_memory(cpu *cpu, opcode *op) {
+void add_opcode_to_memory(cpu *cpu, instruction *op) {
     (void) cpu;
     (void) op;
 }
@@ -282,6 +332,8 @@ int main() {
     print_cpu_state(&c);
     exec_program(&c);
 
-    line_to_instruction("ldaa 123\n");
+    printf("\nstring to mnemonic\n");
+    mnemonic m = line_to_mnemonic("ldaa #$20FF\n");
+    printf(FMT8" "FMT16"\n", m.opcode, m.operand);
 }
 
