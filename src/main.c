@@ -42,8 +42,8 @@ typedef enum {
 typedef struct {
     union {
         struct {
-            uint8_t a;
-            uint8_t b;
+            uint8_t b; // B is low order
+            uint8_t a; // A is high order
         };
         uint16_t d;
     };
@@ -154,59 +154,78 @@ void exec_program(cpu *cpu) {
     }
 }
 
+void print_cpu_state(cpu *cpu) {
+    printf("\n");
+    printf("ACC A: "FMT8"\n", cpu->a);
+    printf("ACC B: "FMT8"\n", cpu->b);
+    printf("ACC D: "FMT16"\n", cpu->d);
+    printf("SP: "FMT16"\n", cpu->sp);
+    printf("PC: "FMT16"\n", cpu->pc);
+    printf("Status : ");
+    for (int i = 0; i < 8; ++i) {
+        printf("%d", cpu->status >> i & 0x1);
+    }
+    printf("\n");
+
+    printf("Next memory range\n");
+    print_memory_range(cpu, cpu->pc, 10);
+}
+
 int main() {
     instr_func[0x86] = INST_LDA_IMM;
     instr_func[0x96] = INST_LDA_DIR;
     instr_func[0xB6] = INST_LDA_EXT;
-    cpu cpu = {0};
+    cpu c = {0};
 
     printf("Registers\n");
-    write_register(&cpu, ACC_A, 0x33);
-    write_register(&cpu, ACC_B, 0x66);
-    read_register(&cpu, ACC_A);
-    read_register(&cpu, ACC_B);
-    read_register(&cpu, ACC_D);
-    write_register(&cpu, ACC_A, 0x36);
-    read_register(&cpu, ACC_D);
+    write_register(&c, ACC_A, 0x33);
+    write_register(&c, ACC_B, 0x66);
+    read_register(&c, ACC_A);
+    read_register(&c, ACC_B);
+    read_register(&c, ACC_D);
+    write_register(&c, ACC_A, 0x36);
+    read_register(&c, ACC_D);
 
     printf("\nMemory\n");
-    write_memory(&cpu, 0x0, 0x38);
-    read_memory(&cpu, 0x0);
+    write_memory(&c, 0x0, 0x38);
+    read_memory(&c, 0x0);
 
-    write_memory(&cpu, 0xFFFF, 0x87);
-    read_memory(&cpu, 0xFFFF);
+    write_memory(&c, 0xFFFF, 0x87);
+    read_memory(&c, 0xFFFF);
 
-    print_memory_range(&cpu, 0xC000, 10);
+    print_memory_range(&c, 0xC000, 10);
 
     printf("\nLDAA IMM\n");
-    write_memory(&cpu, 0xC001, 0x22);
-    cpu.pc = 0xC000;
-    INST_LDA_IMM(&cpu);
-    printf("ACC A: %02x\n", cpu.a);
+    write_memory(&c, 0xC001, 0x22);
+    c.pc = 0xC000;
+    INST_LDA_IMM(&c);
+    printf("ACC A: %02x\n", c.a);
 
     printf("\nLDAA DIR\n");
-    write_memory(&cpu, 0xC001, 0x00);
-    write_memory(&cpu, 0x00, 0x37);
-    cpu.pc = 0xC000;
-    INST_LDA_DIR(&cpu);
-    printf("ACC A: %02x\n", cpu.a);
+    write_memory(&c, 0xC001, 0x00);
+    write_memory(&c, 0x00, 0x37);
+    c.pc = 0xC000;
+    INST_LDA_DIR(&c);
+    printf("ACC A: %02x\n", c.a);
 
     printf("\nLDAA EXT\n");
-    write_memory(&cpu, 0xC001, 0x30);
-    write_memory(&cpu, 0xC002, 0x56);
-    write_memory(&cpu, 0x3056, 0xFF);
-    cpu.pc = 0xC000;
-    INST_LDA_EXT(&cpu);
-    printf("ACC A: %02x\n", cpu.a);
+    write_memory(&c, 0xC001, 0x30);
+    write_memory(&c, 0xC002, 0x56);
+    write_memory(&c, 0x3056, 0xFF);
+    c.pc = 0xC000;
+    INST_LDA_EXT(&c);
+    printf("ACC A: %02x\n", c.a);
 
-    clear_memory(&cpu);
+    c = (cpu) {0};
 
     printf("\nLoad Program\n");
-    load_program(&cpu);
-    write_memory(&cpu, 0x0, 0xFF);
-    print_memory_range(&cpu, 0xC000, 10);
+    load_program(&c);
+    write_memory(&c, 0x0, 0xFF);
+    print_memory_range(&c, 0xC000, 10);
 
     printf("\nExec program\n");
-    exec_program(&cpu);
+    print_cpu_state(&c);
+    exec_program(&c);
+
 }
 
