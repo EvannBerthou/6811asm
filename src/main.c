@@ -2,10 +2,16 @@
 #include <stdint.h>
 
 #define MAX_MEMORY (1 << 16)
+#define FMT8 "0x%02x"
+#define FMT16 "0x%04x"
 
 typedef enum {
-    ADDRESS,
-    CONSTANT
+    IMMEDIATE,
+    EXTENDED,
+    DIRECT,
+    INDEXDED,
+    INHERENT,
+    RELATIVE
 } operand_type;
 
 typedef struct {
@@ -17,7 +23,7 @@ typedef struct {
 } operand;
 
 typedef struct {
-    const char *name;
+    const char *src;
     uint8_t code;
     operand operand;
 } opcode;
@@ -47,6 +53,26 @@ typedef struct {
     uint8_t memory[MAX_MEMORY];
 } cpu;
 
+void INST_LDA_IMM(cpu *cpu) {
+    uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
+    printf("Loading " FMT8 " in ACC A\n", value);
+    cpu->a = value;
+}
+
+void INST_LDA_DIR(cpu *cpu) {
+    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    printf("Loading value at address " FMT8 " (= " FMT8 ") in ACC A\n", addr, cpu->memory[addr]);
+    cpu->a = cpu->memory[addr]; // Get value the operand is poiting at
+}
+
+void INST_LDA_EXT(cpu *cpu) {
+    uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
+    uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
+    uint16_t addr = (b0 << 8) | b1;
+    printf("Loading value at address " FMT16 " (= " FMT8 ") in ACC A\n", addr, cpu->memory[addr]);
+    cpu->a = cpu->memory[addr];
+}
+
 const char *register_name(register_type rt) {
     switch (rt) {
     case ACC_A: return "ACC A";
@@ -64,7 +90,7 @@ uint16_t read_register(cpu *cpu, register_type rt) {
     case ACC_D: value = cpu->d; break;
     default: break;
     }
-    printf("Reading %s: %04x\n", register_name(rt), value);
+    printf("Reading %s: " FMT16 "\n", register_name(rt), value);
     return value;
 }
 
@@ -89,12 +115,6 @@ uint8_t read_memory(cpu *cpu, uint16_t pos) {
     printf("Reading at %04x: %04x\n", pos, cpu->memory[pos]);
     return cpu->memory[pos];
 }
-
-void load_program(cpu *cpu) {
-    const int org = 0xC000;
-    write_memory(org,
-}
-
 
 void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
     for (uint16_t i = 0; i < len; ++i) {
@@ -122,5 +142,26 @@ int main() {
     read_memory(&cpu, 0xFFFF);
 
     print_memory_range(&cpu, 0xC000, 10);
+
+    printf("\nLDAA IMM\n");
+    write_memory(&cpu, 0xC001, 0x22);
+    cpu.pc = 0xC000;
+    INST_LDA_IMM(&cpu);
+    printf("ACC A: %02x\n", cpu.a);
+
+    printf("\nLDAA DIR\n");
+    write_memory(&cpu, 0xC001, 0x00);
+    write_memory(&cpu, 0x00, 0x37);
+    cpu.pc = 0xC000;
+    INST_LDA_DIR(&cpu);
+    printf("ACC A: %02x\n", cpu.a);
+
+    printf("\nLDAA EXT\n");
+    write_memory(&cpu, 0xC001, 0x30);
+    write_memory(&cpu, 0xC002, 0x56);
+    write_memory(&cpu, 0x3056, 0xFF);
+    cpu.pc = 0xC000;
+    INST_LDA_EXT(&cpu);
+    printf("ACC A: %02x\n", cpu.a);
 }
 

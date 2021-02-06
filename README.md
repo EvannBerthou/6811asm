@@ -55,9 +55,10 @@ Par exemple un ```LDA #4``` donnera ```86 04``` mais un ```LDA $5``` donnera ```
     - Ajoute des constantes (equ)
     - Ajout des ports
     - Addressing mode
+    - Interrupts
 
 - Execution
-    - Affichage du contenue
+    - Affichage du contenu
     - Execution instruction par instruction
 
 - Tests
