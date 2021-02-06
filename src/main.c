@@ -32,6 +32,8 @@ typedef struct {
     operand_type operand_type;
 } mnemonic;
 
+mnemonic nop_mnemonic = {.opcode = 0x1, .operand = 0, .operand_type = NONE};
+
 instruction instructions[] = {
     {
         .name = "ldaa",
@@ -65,6 +67,11 @@ typedef struct {
 
     uint8_t memory[MAX_MEMORY];
 } cpu;
+
+void INST_NOP(cpu *cpu) {
+    (void) cpu;
+    // DOES NOTHING
+}
 
 void INST_LDA_IMM(cpu *cpu) {
     uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
@@ -152,13 +159,6 @@ uint8_t read_memory(cpu *cpu, uint16_t pos) {
     return cpu->memory[pos];
 }
 
-void clear_memory(cpu *cpu) {
-    int i = MAX_MEMORY;
-    while (i--) {
-        cpu->memory[i] = 0x0;
-    }
-}
-
 uint8_t part_count(const char *str) {
     uint8_t wc = 0;
     uint8_t state = 0;
@@ -174,8 +174,6 @@ uint8_t part_count(const char *str) {
     return wc;
 }
 
-uint8_t instr_operand_count[0xFF] = {0};
-
 instruction * opcode_str_to_hex(const char *str) {
     for (int i = 0; i < 1; ++i) {
         instruction *op = &instructions[i];
@@ -190,7 +188,7 @@ mnemonic line_to_mnemonic(const char *line) {
     uint8_t nb_parts = part_count(line);
     if (nb_parts > 2) {
         printf("Too many operands\n");
-        return (mnemonic) {0};
+        return nop_mnemonic;
     }
 
     // Get instruction name
@@ -201,14 +199,19 @@ mnemonic line_to_mnemonic(const char *line) {
     }
     if (i > 5) {
         printf("Instruction is too long\n");
+        return nop_mnemonic;
     }
 
     instruction *inst = opcode_str_to_hex(part);
+    if (inst == NULL) {
+        printf("%s is an undefined (or not implemented) instruction\n", part);
+        return nop_mnemonic;
+    }
 
     uint8_t need_operand = inst->operands[0] != NONE;
     if (need_operand != (nb_parts - 1)) { // need an operand but none were given
         printf("This instruction requires %d operand but %d recieved\n", need_operand, nb_parts - 1);
-        return (mnemonic) {0};
+        return nop_mnemonic;
     }
     mnemonic result = {0};
     if (need_operand) {
@@ -225,7 +228,7 @@ mnemonic line_to_mnemonic(const char *line) {
         long l = strtol(number_part, &end, 16);
         if (l == 0 && number_part == end) {
             printf("Error while parsing the operand %s\n", operand_str);
-            return (mnemonic) {0};
+            return nop_mnemonic;
         }
         uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
         result.operand = operand_value;
@@ -261,18 +264,20 @@ void load_program(cpu *cpu) {
 
     mnemonic m2 = line_to_mnemonic("ldaa $3000\n");
     add_mnemonic_to_memory(cpu, &m2);
+
+    mnemonic m3 = line_to_mnemonic("nop");
+    add_mnemonic_to_memory(cpu, &m3);
     cpu->pc = org;
 }
 
-void (*instr_func[0xFF]) (cpu *cpu) = {0};
+void (*instr_func[0xFF]) (cpu *cpu) = {INST_NOP};
 
 void exec_program(cpu *cpu) {
     while (cpu->memory[cpu->pc] != 0x0) {
         uint8_t inst = cpu->memory[cpu->pc];
+        printf("Executing "FMT8" instruction\n", inst);
         if (instr_func[inst] != NULL) {
             (*instr_func[inst])(cpu); // Call the function with this opcode
-        } else {
-            printf(FMT8" is an undefined (or not implemented) opcode\n", inst);
         }
         cpu->pc++;
         print_cpu_state(cpu);

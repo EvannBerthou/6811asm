@@ -21,9 +21,14 @@
 
 
 La ram est utilisée afin de stocker des informations durant le déroulement du programme (256 bytes).
+
 Les registres spéciaux servent à controller et définir le fonctionnements des ports.
-Les parties non utilisés peuvent servir à stocker le programme.
-Le programme est contenu das dans les parties non utilisés ainsi que dans l'EEPROM.
+
+Les parties non utilisés servent à stocker le programme en lui-même.
+
+La partie non utilisée est de la ROM, c'est-à-dire qu'elle ne peut pas être reécrite. En pratique, le code est écrit avant pour ensuite être écrite une fois le programme terminé et le microcontrolleur acheté.
+
+L'EEPROM est une partie qui peut être reécritute même après achat de microcontrolleur, elle peut être utilisé pour stocker des informations sur un produit en particulier. C'est de la mémoire permanante, et qui reste même sans courant.
 
 ### Instructions
 
@@ -50,16 +55,14 @@ Par exemple un ```LDA #4``` donnera ```86 04``` mais un ```LDA $5``` donnera ```
 
 ## TODO
 - Assembleur
-    - Conversion du code en opcode
     - Lecture de fichier
     - Ajoute des constantes (equ)
     - Ajout des ports
-    - Addressing mode
+    - Implémentation de toutes les instructions
     - Interrupts
 
 - Execution
-    - Affichage du contenu
-    - Execution instruction par instruction
+    - Execution pas à pas
 
 - Tests
     - Programme de tests afin de tester le programme de tous les côtés
