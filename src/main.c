@@ -24,9 +24,9 @@ typedef struct {
 } operand;
 
 typedef struct {
-    const char *src;
-    uint8_t code;
-    operand operand;
+    const char *name;
+    uint8_t codes;
+    operand operands;
 } opcode;
 
 typedef enum {
@@ -130,6 +130,61 @@ void clear_memory(cpu *cpu) {
     }
 }
 
+uint8_t part_count(const char *str) {
+    uint8_t wc = 0;
+    uint8_t state = 0;
+    while (*str) {
+        if (*str == ' ' || *str == '\n' || *str == '\t') {
+            state = 0;
+        } else if (state == 0) {
+            state = 1;
+            wc++;
+        }
+        str++;
+    }
+    return wc;
+}
+
+uint8_t instr_operand_count[0xFF] = {0};
+
+uint8_t opcode_str_to_hex(const char *str) {
+    (void) str;
+    return 0x0;
+}
+
+opcode line_to_instruction(const char *line) {
+    uint8_t nb_parts = part_count(line);
+    if (nb_parts > 2) {
+        printf("Too many operands\n");
+        return (opcode) {0};
+    }
+
+    // Get instruction name
+    char part[6] = {0}; // Longest instruction is BRCLR
+    uint8_t part_len = 0;
+    for (; line[part_len] != ' ' && line[part_len] != '\0' && part_len < 6; ++part_len) {
+        part[part_len] = line[part_len];
+    }
+    if (part_len > 5) {
+        printf("Instruction is too long\n");
+    }
+
+    uint8_t op = opcode_str_to_hex(part);
+
+    uint8_t need_operand = instr_operand_count[op];
+    if (need_operand != (nb_parts - 1)) { // need an operand but none were given
+        printf("This instruction requires %d operand but %d recieved\n", need_operand, nb_parts - 1);
+        return (opcode) {0};
+    }
+
+    return (opcode) {0};
+}
+
+void add_opcode_to_memory(cpu *cpu, opcode *op) {
+    (void) cpu;
+    (void) op;
+}
+
 void load_program(cpu *cpu) {
     const int org = 0xC000; // TODO: SHOULD BE DETERMINED IN THE CODE
     cpu->pc = org;
@@ -227,5 +282,6 @@ int main() {
     print_cpu_state(&c);
     exec_program(&c);
 
+    line_to_instruction("ldaa 123\n");
 }
 
