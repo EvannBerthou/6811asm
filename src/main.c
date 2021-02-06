@@ -243,7 +243,7 @@ mnemonic line_to_mnemonic(const char *line) {
     char part[6] = {0}; // Longest instruction is BRCLR
     int i; // index of part to write
     for (i = 0; *line != ' ' && *line != '\0' && i < 6; ++i, ++line) {
-        part[i] = *line;
+        part[i] = tolower(*line);
     }
     if (i > 5) {
         printf("Instruction is too long\n");
@@ -328,7 +328,6 @@ void exec_program(cpu *cpu) {
             (*instr_func[inst])(cpu); // Call the function with this opcode
         }
         cpu->pc++;
-        print_cpu_state(cpu);
     }
 }
 
