@@ -21,14 +21,6 @@ typedef enum {
 } operand_type;
 
 typedef struct {
-    operand_type type;
-    union {
-        uint8_t as_u8;
-        uint16_t as_u16;
-    };
-} operand;
-
-typedef struct {
     const char *name;
     uint8_t codes[OPERAND_TYPE_COUNT];
     operand_type operands[OPERAND_TYPE_COUNT];
@@ -94,6 +86,29 @@ void INST_LDA_EXT(cpu *cpu) {
     cpu->a = cpu->memory[addr];
 }
 
+void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
+    for (uint16_t i = 0; i < len; ++i) {
+        printf("%04x: %02x\n", i, cpu->memory[from + i]);
+    }
+}
+
+void print_cpu_state(cpu *cpu) {
+    printf("\n");
+    printf("ACC A: "FMT8"\n", cpu->a);
+    printf("ACC B: "FMT8"\n", cpu->b);
+    printf("ACC D: "FMT16"\n", cpu->d);
+    printf("SP: "FMT16"\n", cpu->sp);
+    printf("PC: "FMT16"\n", cpu->pc);
+    printf("Status : ");
+    for (int i = 0; i < 8; ++i) {
+        printf("%d", cpu->status >> i & 0x1);
+    }
+    printf("\n");
+
+    printf("Next memory range\n");
+    print_memory_range(cpu, cpu->pc, 10);
+}
+
 const char *register_name(register_type rt) {
     switch (rt) {
     case ACC_A: return "ACC A";
@@ -135,12 +150,6 @@ void write_memory(cpu *cpu, uint16_t pos, uint8_t value) {
 uint8_t read_memory(cpu *cpu, uint16_t pos) {
     printf("Reading at %04x: %04x\n", pos, cpu->memory[pos]);
     return cpu->memory[pos];
-}
-
-void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
-    for (uint16_t i = 0; i < len; ++i) {
-        printf("%04x: %02x\n", i, cpu->memory[from + i]);
-    }
 }
 
 void clear_memory(cpu *cpu) {
@@ -230,18 +239,28 @@ mnemonic line_to_mnemonic(const char *line) {
     return result;
 }
 
-void add_opcode_to_memory(cpu *cpu, instruction *op) {
-    (void) cpu;
-    (void) op;
+void add_mnemonic_to_memory(cpu *cpu, mnemonic *m) {
+    cpu->memory[cpu->pc++] = m->opcode;
+    if (m->operand_type != NONE) {
+        // Only extended uses 2 bytes for the operand
+        // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
+        if (m->operand_type == EXTENDED) {
+            cpu->memory[cpu->pc++] = (m->operand >> 8) & 0xFF;
+            cpu->memory[cpu->pc++] = m->operand & 0xFF;
+        } else {
+            cpu->memory[cpu->pc++] = m->operand & 0xFF;
+        }
+    }
 }
 
 void load_program(cpu *cpu) {
     const int org = 0xC000; // TODO: SHOULD BE DETERMINED IN THE CODE
     cpu->pc = org;
-    cpu->memory[cpu->pc++] = 0x86;
-    cpu->memory[cpu->pc++] = 0x30;
-    cpu->memory[cpu->pc++] = 0x96;
-    cpu->memory[cpu->pc++] = 0x0;
+    mnemonic m1 = line_to_mnemonic("ldaa $20\n");
+    add_mnemonic_to_memory(cpu, &m1);
+
+    mnemonic m2 = line_to_mnemonic("ldaa $3000\n");
+    add_mnemonic_to_memory(cpu, &m2);
     cpu->pc = org;
 }
 
@@ -256,25 +275,10 @@ void exec_program(cpu *cpu) {
             printf(FMT8" is an undefined (or not implemented) opcode\n", inst);
         }
         cpu->pc++;
+        print_cpu_state(cpu);
     }
 }
 
-void print_cpu_state(cpu *cpu) {
-    printf("\n");
-    printf("ACC A: "FMT8"\n", cpu->a);
-    printf("ACC B: "FMT8"\n", cpu->b);
-    printf("ACC D: "FMT16"\n", cpu->d);
-    printf("SP: "FMT16"\n", cpu->sp);
-    printf("PC: "FMT16"\n", cpu->pc);
-    printf("Status : ");
-    for (int i = 0; i < 8; ++i) {
-        printf("%d", cpu->status >> i & 0x1);
-    }
-    printf("\n");
-
-    printf("Next memory range\n");
-    print_memory_range(cpu, cpu->pc, 10);
-}
 
 int main() {
     instr_func[0x86] = INST_LDA_IMM;
@@ -321,19 +325,21 @@ int main() {
     INST_LDA_EXT(&c);
     printf("ACC A: %02x\n", c.a);
 
+    printf("\nstring to mnemonic\n");
+    mnemonic m = line_to_mnemonic("ldaa #$20FF\n");
+    printf(FMT8" "FMT16"\n", m.opcode, m.operand);
+
+    // Clear the cpu
     c = (cpu) {0};
 
     printf("\nLoad Program\n");
     load_program(&c);
-    write_memory(&c, 0x0, 0xFF);
     print_memory_range(&c, 0xC000, 10);
 
     printf("\nExec program\n");
-    print_cpu_state(&c);
+    write_memory(&c, 0x20, 0xFF);
+    write_memory(&c, 0x3000, 0x30);
+    printf("\nStarting execution\n");
     exec_program(&c);
-
-    printf("\nstring to mnemonic\n");
-    mnemonic m = line_to_mnemonic("ldaa #$20FF\n");
-    printf(FMT8" "FMT16"\n", m.opcode, m.operand);
 }
 
