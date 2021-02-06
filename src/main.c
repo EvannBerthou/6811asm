@@ -1,7 +1,26 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#define MAX_RAM (1 << 16)
+#define MAX_MEMORY (1 << 16)
+
+typedef enum {
+    ADDRESS,
+    CONSTANT
+} operand_type;
+
+typedef struct {
+    operand_type type;
+    union {
+        uint8_t as_u8;
+        uint16_t as_u16;
+    };
+} operand;
+
+typedef struct {
+    const char *name;
+    uint8_t code;
+    operand operand;
+} opcode;
 
 typedef enum {
     ACC_A,
@@ -25,7 +44,7 @@ typedef struct {
     uint16_t pc;
     uint8_t status;
 
-    uint8_t ram[MAX_RAM];
+    uint8_t memory[MAX_MEMORY];
 } cpu;
 
 const char *register_name(register_type rt) {
@@ -63,12 +82,12 @@ void write_register(cpu *cpu, register_type rt, uint16_t value) {
 
 void write_memory(cpu *cpu, uint16_t pos, uint8_t value) {
     printf("Writing at %04x: %04x\n", pos, value);
-    cpu->ram[pos] = value;
+    cpu->memory[pos] = value;
 }
 
 uint8_t read_memory(cpu *cpu, uint16_t pos) {
-    printf("Reading at %04x: %04x\n", pos, cpu->ram[pos]);
-    return cpu->ram[pos];
+    printf("Reading at %04x: %04x\n", pos, cpu->memory[pos]);
+    return cpu->memory[pos];
 }
 
 

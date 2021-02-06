@@ -29,6 +29,14 @@ Le programme est contenu das dans les parties non utilisés ainsi que dans l'EEP
 
 <http://www.science.smith.edu/dftwiki/images/9/9e/CSC270_Assembly_Instructions.pdf>
 
+## Fonctionnement
+
+Lecture du fichier
+Premier passage afin de remplacer les constantes (equ, valeurs)
+Transformation des instructions en opcode (avec operande)
+Execution des opcode
+
+
 ## TODO
 - Assembleur
     - Conversion du code en opcode
