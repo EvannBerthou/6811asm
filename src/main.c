@@ -304,6 +304,13 @@ void add_mnemonic_to_memory(cpu *cpu, mnemonic *m) {
     }
 }
 
+int str_empty(const char *str) {
+    do {
+        if (*str != '\0' && *str != ' ' && *str != '\n') return 0;
+    } while(*str++ != '\0');
+    return 1;
+}
+
 int load_program(cpu *cpu, const char *file_path) {
     const int org = 0xC000; // TODO: SHOULD BE DETERMINED IN THE CODE
     cpu->pc = org;
@@ -313,14 +320,38 @@ int load_program(cpu *cpu, const char *file_path) {
         return 0;
     }
 
+    // first pass
     char buf[100];
-
     for (;;) {
         if (fgets(buf, 100, f) == NULL) {
             break;
         }
         // Remove \n from buffer
         buf[strcspn(buf, "\n")] = '\0';
+        if (str_empty(buf)) {
+            printf("empty\n");
+            continue;
+        }
+        if (strstr(buf, "equ") != NULL) {
+            printf("equ in\n");
+        }
+    }
+
+    rewind(f);
+    // second pass
+    for (;;) {
+        if (fgets(buf, 100, f) == NULL) {
+            break;
+        }
+        // Remove \n from buffer
+        buf[strcspn(buf, "\n")] = '\0';
+        if (str_empty(buf)) {
+            printf("empty\n");
+            continue;
+        }
+        if (strstr(buf, "equ") != NULL) {
+            continue;
+        }
         printf("Read %s\n", buf);
         mnemonic m = line_to_mnemonic(buf);
         add_mnemonic_to_memory(cpu, &m);
