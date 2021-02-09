@@ -209,7 +209,7 @@ uint8_t part_count(const char *str) {
     uint8_t wc = 0;
     uint8_t state = 0;
     while (*str) {
-        if (*str == ' ' || *str == '\n' || *str == '\t') {
+        if (*str == ' ' || *str == '\n' || *str == '\t' || *str == '\r') {
             state = 0;
         } else if (state == 0) {
             state = 1;
@@ -242,7 +242,7 @@ mnemonic line_to_mnemonic(const char *line) {
     // Get instruction name
     char part[6] = {0}; // Longest instruction is BRCLR
     int i; // index of part to write
-    for (i = 0; *line != ' ' && *line != '\0' && i < 6; ++i, ++line) {
+    for (i = 0; *line != ' ' && *line != '\0' && *line != '\n' && i < 6; ++i, ++line) {
         part[i] = tolower(*line);
     }
     if (i > 5) {
@@ -304,18 +304,29 @@ void add_mnemonic_to_memory(cpu *cpu, mnemonic *m) {
     }
 }
 
-void load_program(cpu *cpu) {
+int load_program(cpu *cpu, const char *file_path) {
     const int org = 0xC000; // TODO: SHOULD BE DETERMINED IN THE CODE
     cpu->pc = org;
-    mnemonic m1 = line_to_mnemonic("ldaa #20\n");
-    add_mnemonic_to_memory(cpu, &m1);
+    FILE *f = fopen(file_path, "r");
+    if (!f) {
+        printf("Error opennig file : %s\n", file_path);
+        return 0;
+    }
 
-    mnemonic m2 = line_to_mnemonic("ldb #30\n");
-    add_mnemonic_to_memory(cpu, &m2);
+    char buf[100];
 
-    mnemonic m3 = line_to_mnemonic("aba");
-    add_mnemonic_to_memory(cpu, &m3);
+    for (;;) {
+        if (fgets(buf, 100, f) == NULL) {
+            break;
+        }
+        // Remove \n from buffer
+        buf[strcspn(buf, "\n")] = '\0';
+        printf("Read %s\n", buf);
+        mnemonic m = line_to_mnemonic(buf);
+        add_mnemonic_to_memory(cpu, &m);
+    }
     cpu->pc = org;
+    return 1;
 }
 
 void (*instr_func[0xFF]) (cpu *cpu) = {INST_NOP};
@@ -389,7 +400,10 @@ int main() {
     c = (cpu) {0};
 
     printf("\nLoad Program\n");
-    load_program(&c);
+    if (!load_program(&c, "f.asm")) {
+        return 0;
+    }
+    printf("\nProgram loaded\n");
     print_memory_range(&c, 0xC000, 10);
 
     printf("\nExec program\n");
@@ -397,5 +411,6 @@ int main() {
     write_memory(&c, 0x3000, 0x30);
     printf("\nStarting execution\n");
     exec_program(&c);
+    print_cpu_state(&c);
 }
 
