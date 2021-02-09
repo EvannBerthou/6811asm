@@ -24,6 +24,7 @@ La ram est utilisée afin de stocker des informations durant le déroulement du 
 
 Les registres spéciaux servent à controller et définir le fonctionnements des ports.
 
+
 Les parties non utilisés servent à stocker le programme en lui-même.
 
 La partie non utilisée est de la ROM, c'est-à-dire qu'elle ne peut pas être reécrite. En pratique, le code est écrit avant pour ensuite être écrite une fois le programme terminé et le microcontrolleur acheté.
@@ -55,11 +56,14 @@ Par exemple un ```LDA #4``` donnera ```86 04``` mais un ```LDA $5``` donnera ```
 
 ## TODO
 - Assembleur
+    - Ajouter de 2 passages
     - Lecture de fichier
     - Ajoute des constantes (equ)
     - Ajout des ports
     - Implémentation de toutes les instructions
     - Interrupts
+
+- Retrouver le nom d'une instruction en fonction de son opcode
 
 - Execution
     - Execution pas à pas
