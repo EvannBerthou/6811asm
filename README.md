@@ -57,7 +57,6 @@ Par exemple un ```LDA #4``` donnera ```86 04``` mais un ```LDA $5``` donnera ```
 ## TODO
 - Assembleur
     - Ajouter de 2 passages
-    - Lecture de fichier
     - Ajoute des constantes (equ)
     - Ajout des ports
     - Implémentation de toutes les instructions
