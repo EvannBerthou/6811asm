@@ -54,6 +54,18 @@ Un opcode est différent en fonction de mode d'adressage de son operand.
 
 Par exemple un ```LDA #4``` donnera ```86 04``` mais un ```LDA $5``` donnera ```96 05```.
 
+### Directives
+Il est possible de donner des directives lors de la compilation. Ces instructions ne seront pas exécutées au cours du programme mais seulement lors de l'assemblage.
+
+[optionnel], <obligatoire>
+
+- ORG <expression> : Permet de définir l'adresse de départ du programme.
+- LABEL EQU <expression> : Permet de définir des constantes aux programmes. Même principe que les defines en C.
+    Le caractères ```*``` fait référence au PC courant. C'est-à-dire que ```*``` fait à la ligne en cours d'exécution.
+- [Label] RMB <expression> : Permet de faire avancer le PC de <expression> bytes.
+- [LABEL] FCC <séparateur><string><séparateur> : Permet de définir des chaines de caractères constantes. Les séparateurs doivent être égaux. Exemple : FFC "Hello, world".
+- ... Il en existe d'autres mais pas encore implémentées.
+
 ## TODO
 - Assembleur
     - Ajouter de 2 passages
