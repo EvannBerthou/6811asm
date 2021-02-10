@@ -20,6 +20,15 @@ typedef enum {
     OPERAND_TYPE_COUNT
 } operand_type;
 
+typedef enum {
+    ORG,
+    CONSTANT,
+    RMB,
+    FCC,
+    NOT_A_DIRECTIVE,
+    DIRECTIVE_TYPE_COUNT
+} directive_type;
+
 typedef struct {
     char *names[2]; // Some instructions have aliases like lda = ldaa
     uint8_t name_count;
@@ -32,6 +41,11 @@ typedef struct {
     uint16_t operand;
     operand_type operand_type;
 } mnemonic;
+
+typedef struct {
+    uint16_t operand;
+    directive_type type;
+} directive;
 
 mnemonic nop_mnemonic = {.opcode = 0x1, .operand = 0, .operand_type = NONE};
 
@@ -304,6 +318,14 @@ void add_mnemonic_to_memory(cpu *cpu, mnemonic *m) {
     }
 }
 
+directive line_to_directive(const char *line) {
+    if (strstr(line, "equ")) {
+        return (directive) {0, CONSTANT};
+    } else { // No directive keyword
+        return (directive) {0, NOT_A_DIRECTIVE};
+    }
+}
+
 int str_empty(const char *str) {
     do {
         if (*str != '\0' && *str != ' ' && *str != '\n') return 0;
@@ -332,8 +354,8 @@ int load_program(cpu *cpu, const char *file_path) {
             printf("empty\n");
             continue;
         }
-        if (strstr(buf, "equ") != NULL) {
-            printf("equ in\n");
+        directive d = line_to_directive(buf);
+        if (d.type != NOT_A_DIRECTIVE) {
         }
     }
 
