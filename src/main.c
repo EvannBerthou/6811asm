@@ -260,7 +260,7 @@ instruction * opcode_str_to_hex(const char *str) {
     return NULL;
 }
 
-uint32_t get_operand_value(char *str) {
+uint32_t get_operand_value(const char *str) {
     const char *operand_str = str;
 
     // Find where the number starts (skips non digit but keeps hex values)
@@ -277,6 +277,15 @@ uint32_t get_operand_value(char *str) {
     return operand_value;
 }
 
+// Returns operand type based on prefix and operand_value
+operand_type get_operand_type(const char *str, uint16_t value) {
+    if (str[0] == '#')                  return IMMEDIATE;
+    if (str[0] == '$' && value <= 0xFF) return DIRECT;
+    if (str[0] == '$' && value >  0xFF) return EXTENDED;
+    return NONE;
+}
+
+// TODO: Check labels array for operands
 mnemonic line_to_mnemonic(char *line) {
     char *parts[10] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 10);
@@ -296,29 +305,17 @@ mnemonic line_to_mnemonic(char *line) {
         printf("%s instruction requires %d operand but %d recieved\n", parts[0], need_operand, nb_parts - 1);
         return nop_mnemonic;
     }
+
     mnemonic result = {0};
     if (need_operand) {
         const char *operand_str = parts[1];
-
-        // Find where the number starts (skip # and $)
-        const char *number_part = operand_str;
-        while (!isdigit(*number_part)) number_part++;
-        // Convert to a number
-        char *end;
-        long l = strtol(number_part, &end, 16);
-        if (l == 0 && number_part == end) {
-            printf("Error while parsing the operand %s\n", operand_str);
-            return nop_mnemonic;
-        }
-        uint32_t operand_value = get_operand_value(parts[1]);
+        // Check if operand_str is inside the label array and if so, use the operand of the label
+        uint32_t operand_value = get_operand_value(operand_str);
         if (operand_value > 0xFFFF) { // Error while parsing
             return nop_mnemonic;
         }
         result.operand = (uint16_t) operand_value;
-        // Change operand type based on prefix and operand_value
-        if (operand_str[0] == '#') result.operand_type = IMMEDIATE;
-        if (operand_str[0] == '$' && operand_value <= 0xFF) result.operand_type = DIRECT;
-        if (operand_str[0] == '$' && operand_value >  0xFF) result.operand_type = EXTENDED;
+        result.operand_type = get_operand_type(operand_str, result.operand);
     }
     result.opcode = inst->codes[inst->operands[result.operand_type]];
 
@@ -393,6 +390,7 @@ int load_program(cpu *cpu, const char *file_path) {
         directive d = line_to_directive(buf);
         if (d.type != NOT_A_DIRECTIVE) {
             printf("Directive operand: %d\n", d.operand);
+            // Added this constant to an array
         }
     }
 
