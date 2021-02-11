@@ -234,6 +234,29 @@ uint8_t part_count(const char *str) {
     return wc;
 }
 
+uint8_t split_by_space(char *str, char **out, uint8_t n) {
+    uint8_t nb_parts = 0;
+    uint8_t state = 0;
+    while (*str) {
+        if (*str == ' ' || *str == '\n' || *str == '\t' || *str == '\r') {
+            if (state == 1) {
+                *str = '\0';
+            }
+            state = 0;
+        } else if (state == 0) {
+            state = 1;
+            out[nb_parts] = str;
+            nb_parts++;
+            if (nb_parts >= n) {
+                printf("WARNING: Too much words on the same line (over %d)!\n", n);
+                return nb_parts;
+            }
+        }
+        str++;
+    }
+    return nb_parts;
+}
+
 instruction * opcode_str_to_hex(const char *str) {
     for (int i = 0; i < INSTRUCTION_COUNT; ++i) {
         instruction *op = &instructions[i];
@@ -246,41 +269,28 @@ instruction * opcode_str_to_hex(const char *str) {
     return NULL;
 }
 
-mnemonic line_to_mnemonic(const char *line) {
-    uint8_t nb_parts = part_count(line);
+mnemonic line_to_mnemonic(char *line) {
+    char *parts[10] = {0};
+    uint8_t nb_parts = split_by_space(line, parts, 10);
     if (nb_parts > 2) {
         printf("Too many operands\n");
         return nop_mnemonic;
     }
 
-    // Get instruction name
-    char part[6] = {0}; // Longest instruction is BRCLR
-    int i; // index of part to write
-    for (i = 0; *line != ' ' && *line != '\0' && *line != '\n' && i < 6; ++i, ++line) {
-        part[i] = tolower(*line);
-    }
-    if (i > 5) {
-        printf("Instruction is too long\n");
-        return nop_mnemonic;
-    }
-
-    instruction *inst = opcode_str_to_hex(part);
+    instruction *inst = opcode_str_to_hex(parts[0]);
     if (inst == NULL) {
-        printf("%s is an undefined (or not implemented) instruction\n", part);
+        printf("%s is an undefined (or not implemented) instruction\n", parts[0]);
         return nop_mnemonic;
     }
 
     uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
     if (need_operand != (nb_parts - 1)) { // need an operand but none were given
-        printf("%s instruction requires %d operand but %d recieved\n", part, need_operand, nb_parts - 1);
+        printf("%s instruction requires %d operand but %d recieved\n", parts[0], need_operand, nb_parts - 1);
         return nop_mnemonic;
     }
     mnemonic result = {0};
     if (need_operand) {
-        char operand_str[6] = {0};
-        while (*line == ' ') line++; // skip all spaces until the next character
-        // Copy operand to operand_str
-        for (int i = 0; i < 6 && *line != '\0' && *line != ' '; ++i, ++line) operand_str[i] = *line;
+        const char *operand_str = parts[1];
 
         // Find where the number starts (skip # and $)
         const char *number_part = operand_str;
@@ -446,7 +456,9 @@ int main() {
     printf("ACC A: %02x\n", c.a);
 
     printf("\nstring to mnemonic\n");
-    mnemonic m = line_to_mnemonic("ldaa #$20FF\n");
+    char str[100];
+    strcpy(str, "ldaa #20FF\n");
+    mnemonic m = line_to_mnemonic(str);
     printf(FMT8" "FMT16"\n", m.opcode, m.operand);
 
     // Clear the cpu
