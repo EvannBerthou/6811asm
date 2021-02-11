@@ -219,21 +219,6 @@ uint8_t read_memory(cpu *cpu, uint16_t pos) {
     return cpu->memory[pos];
 }
 
-uint8_t part_count(const char *str) {
-    uint8_t wc = 0;
-    uint8_t state = 0;
-    while (*str) {
-        if (*str == ' ' || *str == '\n' || *str == '\t' || *str == '\r') {
-            state = 0;
-        } else if (state == 0) {
-            state = 1;
-            wc++;
-        }
-        str++;
-    }
-    return wc;
-}
-
 uint8_t split_by_space(char *str, char **out, uint8_t n) {
     uint8_t nb_parts = 0;
     uint8_t state = 0;
