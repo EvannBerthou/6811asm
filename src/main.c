@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 
 #define MAX_MEMORY (1 << 16)
 #define FMT8 "0x%02x"
@@ -44,6 +45,7 @@ typedef struct {
 
 typedef struct {
     uint16_t operand;
+    operand_type operand_type;
     directive_type type;
 } directive;
 
@@ -220,6 +222,8 @@ uint8_t read_memory(cpu *cpu, uint16_t pos) {
 }
 
 uint8_t split_by_space(char *str, char **out, uint8_t n) {
+    assert(str);
+    assert(n);
     uint8_t nb_parts = 0;
     uint8_t state = 0;
     while (*str) {
@@ -230,7 +234,9 @@ uint8_t split_by_space(char *str, char **out, uint8_t n) {
             state = 0;
         } else if (state == 0) {
             state = 1;
-            out[nb_parts] = str;
+            if (out != NULL) {
+                out[nb_parts] = str;
+            }
             nb_parts++;
             if (nb_parts >= n) {
                 printf("WARNING: Too much words on the same line (over %d)!\n", n);
@@ -252,6 +258,24 @@ instruction * opcode_str_to_hex(const char *str) {
         }
     }
     return NULL;
+}
+
+// TODO: Support hex numbers
+uint32_t get_operand_value(char *str) {
+    const char *operand_str = str;
+
+    // Find where the number starts (skip # and $)
+    const char *number_part = operand_str;
+    while (!isdigit(*number_part)) number_part++;
+    // Convert to a number
+    char *end;
+    long l = strtol(number_part, &end, 16);
+    if (l == 0 && number_part == end) {
+        printf("Error while parsing the operand %s\n", operand_str);
+        return 0xFFFFFFFF; // Error code
+    }
+    uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
+    return operand_value;
 }
 
 mnemonic line_to_mnemonic(char *line) {
@@ -287,8 +311,11 @@ mnemonic line_to_mnemonic(char *line) {
             printf("Error while parsing the operand %s\n", operand_str);
             return nop_mnemonic;
         }
-        uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
-        result.operand = operand_value;
+        uint32_t operand_value = get_operand_value(parts[1]);
+        if (operand_value > 0xFFFF) { // Error while parsing
+            return nop_mnemonic;
+        }
+        result.operand = (uint16_t) operand_value;
         // Change operand type based on prefix and operand_value
         if (operand_str[0] == '#') result.operand_type = IMMEDIATE;
         if (operand_str[0] == '$' && operand_value <= 0xFF) result.operand_type = DIRECT;
@@ -313,11 +340,26 @@ void add_mnemonic_to_memory(cpu *cpu, mnemonic *m) {
     }
 }
 
-directive line_to_directive(const char *line) {
+// TODO: Handle errors
+directive line_to_directive(char *line) {
     if (strstr(line, "equ")) {
-        return (directive) {0, CONSTANT};
+        char *parts[3] = {0};
+        uint8_t nb_parts = split_by_space(line, parts, 3);
+        if (nb_parts != 3) {
+            printf("equ format : <LABEL> equ <VALUE>\n");
+            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+        }
+        uint32_t operand = get_operand_value(parts[2]);
+        if (operand > 0xFFFF) {
+            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+        }
+        directive result = {operand, NONE, CONSTANT};
+        if (parts[2][0] == '#') result.operand_type = IMMEDIATE;
+        if (parts[2][0] == '$' && operand <= 0xFF) result.operand_type = DIRECT;
+        if (parts[2][0] == '$' && operand >  0xFF) result.operand_type = EXTENDED;
+        return result;
     } else { // No directive keyword
-        return (directive) {0, NOT_A_DIRECTIVE};
+        return (directive) {0, NONE, NOT_A_DIRECTIVE};
     }
 }
 
@@ -351,6 +393,7 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         directive d = line_to_directive(buf);
         if (d.type != NOT_A_DIRECTIVE) {
+            printf("Directive operand: %d\n", d.operand);
         }
     }
 

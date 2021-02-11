@@ -1,5 +1,9 @@
+START equ $5
 START equ $C000
-lda 1 2 3 4 5 6 7 9 10
+START equ
+equ $C000
+equ
+
 lda #6
 ldb #3
 aba
