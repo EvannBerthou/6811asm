@@ -238,7 +238,7 @@ uint8_t split_by_space(char *str, char **out, uint8_t n) {
                 out[nb_parts] = str;
             }
             nb_parts++;
-            if (nb_parts >= n) {
+            if (nb_parts > n) {
                 printf("WARNING: Too much words on the same line (over %d)!\n", n);
                 return nb_parts;
             }
@@ -260,13 +260,12 @@ instruction * opcode_str_to_hex(const char *str) {
     return NULL;
 }
 
-// TODO: Support hex numbers
 uint32_t get_operand_value(char *str) {
     const char *operand_str = str;
 
-    // Find where the number starts (skip # and $)
+    // Find where the number starts (skips non digit but keeps hex values)
     const char *number_part = operand_str;
-    while (!isdigit(*number_part)) number_part++;
+    while (!isdigit(*number_part) && (*number_part < 'A' || *number_part > 'C')) number_part++;
     // Convert to a number
     char *end;
     long l = strtol(number_part, &end, 16);
