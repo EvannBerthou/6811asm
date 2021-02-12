@@ -88,6 +88,9 @@ instruction instructions[] = {
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
+const char *directives_name[] = { "org", "equ" };
+#define DIRECTIVE_COUNT ((uint8_t)(sizeof(directives_name) / sizeof(directives_name[0])))
+
 
 typedef enum {
     ACC_A,
@@ -195,6 +198,25 @@ void print_cpu_state(cpu *cpu) {
     print_memory_range(cpu, cpu->pc, 10);
 }
 
+uint8_t is_directive(const char *str) {
+    for (uint8_t i = 0; i < DIRECTIVE_COUNT; ++i) {
+        const char *substr = strstr(str, directives_name[i]);
+        if (substr != NULL) {
+            // Verify if the word is surrouned by spaces (and not inside a word)
+            if ((substr >= str || *(substr - 1) == ' ') && *(substr + strlen(directives_name[i])) == ' ') {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
+void str_tolower(char *str) {
+    for (uint8_t i = 0; *str != '\0'; ++i, ++str) {
+        *str = tolower(*str);
+    }
+}
+
 /*****************************
 *          Assembly          *
 *****************************/
@@ -264,7 +286,7 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
 
     // Find where the number starts (skips non digit but keeps hex values)
     const char *number_part = str;
-    while (!isdigit(*number_part) && (*number_part < 'A' || *number_part > 'C')) number_part++;
+    while (!isdigit(*number_part) && (*number_part < 'a' || *number_part > 'c')) number_part++;
     // Convert to a number
     char *end;
     long l = strtol(number_part, &end, 16);
@@ -390,10 +412,10 @@ int load_program(cpu *cpu, const char *file_path) {
             printf("empty\n");
             continue;
         }
+        str_tolower(buf);
         directive d = line_to_directive(buf, labels, label_count);
         if (d.type != NOT_A_DIRECTIVE) {
             if (d.type == ORG) {
-                printf("dop: %u\n", d.operand.value);
                 if (org_program == 0xFFFF) { // If ORG has already been set
                     org_program = d.operand.value;
                 } else {
@@ -431,10 +453,9 @@ int load_program(cpu *cpu, const char *file_path) {
             printf("empty\n");
             continue;
         }
-        if (strstr(buf, "equ") != NULL) {
-            continue;
-        }
-        if (strstr(buf, "org") != NULL) {
+        str_tolower(buf);
+        if (is_directive(buf)) {
+            printf("skipping directive %s\n", buf);
             continue;
         }
         printf("Read %s\n", buf);
