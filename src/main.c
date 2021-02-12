@@ -13,6 +13,10 @@
 const char *strdup(const char *base) {
     size_t len = strlen(base);
     char *str = calloc(len + 1, sizeof(char));
+    if (str == NULL) {
+        printf("calloc error\n");
+        exit(1);
+    }
     memcpy(str, base, len);
     return str;
 }
@@ -375,18 +379,13 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         if (operand.type == NONE) {
             return empty_directive;
         }
-        directive result = {NULL, {operand.value, operand.type}, CONSTANT};
-        if (parts[2][0] == '#') result.operand.type = IMMEDIATE;
-        if (parts[2][0] == '$' && operand.value <= 0xFF) result.operand.type = DIRECT;
-        if (parts[2][0] == '$' && operand.value >  0xFF) result.operand.type = EXTENDED;
-        result.label = strdup(parts[0]);
-        return result;
+        return (directive) {strdup(parts[0]), {operand.value, operand.type}, CONSTANT};
     }
     if (strstr(line, "org")) {
         char *parts[2] = {0};
         uint8_t nb_parts = split_by_space(line, parts, 2);
         if (nb_parts != 2) {
-            printf("ORG format : equ <ADDR> ($<VALUE>)\n");
+            printf("ORG format : ORG <ADDR> ($<VALUE>)\n");
             return empty_directive;
         }
 
