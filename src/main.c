@@ -10,17 +10,6 @@
 #define FMT8 "0x%02x"
 #define FMT16 "0x%04x"
 
-const char *strdup(const char *base) {
-    size_t len = strlen(base);
-    char *str = calloc(len + 1, sizeof(char));
-    if (str == NULL) {
-        printf("calloc error\n");
-        exit(1);
-    }
-    memcpy(str, base, len);
-    return str;
-}
-
 typedef enum {
     NONE,
     IMMEDIATE,
@@ -101,9 +90,6 @@ instruction instructions[] = {
 
 const char *directives_name[] = { "org", "equ" };
 #define DIRECTIVE_COUNT ((uint8_t)(sizeof(directives_name) / sizeof(directives_name[0])))
-
-const char *branches_code[] = { "bra" };
-#define BRANCHES_COUNT ((uint8_t)(sizeof(branches_code) / sizeof(branches_code[0])))
 
 typedef struct {
     union {
@@ -216,6 +202,17 @@ void INST_BRA(cpu *cpu) {
 *           Utils            *
 *****************************/
 
+const char *strdup(const char *base) {
+    size_t len = strlen(base);
+    char *str = calloc(len + 1, sizeof(char));
+    if (str == NULL) {
+        printf("calloc error\n");
+        exit(1);
+    }
+    memcpy(str, base, len);
+    return str;
+}
+
 uint8_t is_valid_operand_type(instruction *inst, operand_type type) {
     operand_type *base = inst->operands;
     while(*base != NONE) {
@@ -282,16 +279,6 @@ void str_tolower(char *str) {
     for (uint8_t i = 0; *str != '\0'; ++i, ++str) {
         *str = tolower(*str);
     }
-}
-
-uint8_t is_branch(const char *str) {
-    for (uint8_t i = 0; i < BRANCHES_COUNT; ++i) {
-        const char *substr = strstr(str, branches_code[i]);
-        if (substr != NULL) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 uint8_t split_by_space(char *str, char **out, uint8_t n) {
