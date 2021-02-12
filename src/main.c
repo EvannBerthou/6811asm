@@ -10,6 +10,7 @@
 #define FMT8 "0x%02x"
 #define FMT16 "0x%04x"
 
+
 const char *strdup(const char *base) {
     size_t len = strlen(base);
     char *str = calloc(len + 1, sizeof(char));
@@ -116,6 +117,15 @@ typedef struct {
 
     uint8_t memory[MAX_MEMORY];
 } cpu;
+
+const char *file_name = "f.asm";
+uint32_t file_line = 0;
+
+#define ERROR(f_, ...) do {\
+    printf("[ERROR] l.%u: "f_".\n", file_line, __VA_ARGS__); \
+    exit(1); \
+} while (0)
+
 
 /*****************************
 *        Instructions        *
@@ -280,7 +290,6 @@ operand_type get_operand_type(const char *str, uint16_t value) {
 operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
     const directive *directive = get_directive_by_label(str, labels, label_count);
     if (directive != NULL) {
-        printf("Label found (%s) with value %u\n", directive->label, directive->operand.value);
         return (operand) {directive->operand.value, directive->operand.type};
     }
 
@@ -291,13 +300,12 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
     char *end;
     long l = strtol(number_part, &end, 16);
     if (l == 0 && number_part == end) {
-        printf("Error while parsing the operand %s\n", str);
-        return empty_operand;
+        ERROR("%s %s", "is not a valid hex number", str);
     }
     uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
     operand_type type = get_operand_type(str, operand_value);
     if (type == NONE) {
-        return empty_operand;
+        ERROR("%s `%s` %s", "The operand", str, "is neither a constant or a label");
     }
     return (operand) {operand_value, type};
 }
@@ -307,32 +315,22 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     char *parts[10] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 10);
     if (nb_parts > 2) {
-        printf("Too many operands\n");
-        return nop_mnemonic;
+        ERROR("`%s` %s", line, "has many operands");
     }
 
     instruction *inst = opcode_str_to_hex(parts[0]);
     if (inst == NULL) {
-        printf("%s is an undefined (or not implemented) instruction\n", parts[0]);
-        return nop_mnemonic;
+        ERROR("%s is an undefined (or not implemented) instruction", parts[0]);
     }
 
     uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
     if (need_operand != (nb_parts - 1)) { // need an operand but none were given
-        printf("%s instruction requires %d operand but %d recieved\n", parts[0], need_operand, nb_parts - 1);
-        return nop_mnemonic;
+        ERROR("%s instruction requires %d operand but %d recieved\n", parts[0], need_operand, nb_parts - 1);
     }
 
     mnemonic result = {0};
     if (need_operand) {
-        operand op = get_operand_value(parts[1], labels, label_count);
-        if (op.type == NONE) {
-            printf("Invalid operand for ");
-            for (uint8_t i = 0; i < nb_parts; i++) printf("%s ", parts[i]);
-            printf("\n");
-            return nop_mnemonic;
-        }
-        result.operand = op;
+        result.operand = get_operand_value(parts[1], labels, label_count);
     }
     result.opcode = inst->codes[inst->operands[result.operand.type]];
     return result;
@@ -359,27 +357,21 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         char *parts[3] = {0};
         uint8_t nb_parts = split_by_space(line, parts, 3);
         if (nb_parts != 3) {
-            printf("equ format : <LABEL> equ <VALUE>\n");
-            return empty_directive;
+            ERROR("%s", "equ format : <LABEL> equ <VALUE>\n");
         }
         operand operand = get_operand_value(parts[2], labels, label_count);
-        if (operand.type == NONE) {
-            return empty_directive;
-        }
         return (directive) {strdup(parts[0]), {operand.value, operand.type}, CONSTANT};
     }
     if (strstr(line, "org")) {
         char *parts[2] = {0};
         uint8_t nb_parts = split_by_space(line, parts, 2);
         if (nb_parts != 2) {
-            printf("ORG format : ORG <ADDR> ($<VALUE>)\n");
-            return empty_directive;
+            ERROR("%s", "ORG format : ORG <ADDR> ($<VALUE>)\n");
         }
 
         operand operand = get_operand_value(parts[1], labels, label_count);
         if (operand.type == NONE) {
-            printf("No operand found\n");
-            return empty_directive;
+            ERROR("%s", "No operand found\n");
         }
         return (directive) {NULL, {operand.value, EXTENDED}, ORG};
     }
@@ -398,7 +390,7 @@ int load_program(cpu *cpu, const char *file_path) {
     FILE *f = fopen(file_path, "r");
     if (!f) {
         printf("Error opennig file : %s\n", file_path);
-        return 0;
+        exit(1);
     }
 
     uint16_t org_program = 0xFFFF;
@@ -408,13 +400,13 @@ int load_program(cpu *cpu, const char *file_path) {
     // first pass
     char buf[100];
     for (;;) {
+        file_line++;
         if (fgets(buf, 100, f) == NULL) {
             break;
         }
         // Remove \n from buffer
         buf[strcspn(buf, "\n")] = '\0';
         if (str_empty(buf)) {
-            printf("empty\n");
             continue;
         }
         str_tolower(buf);
@@ -424,7 +416,7 @@ int load_program(cpu *cpu, const char *file_path) {
                 if (org_program == 0xFFFF) { // If ORG has already been set
                     org_program = d.operand.value;
                 } else {
-                    printf("WARNING: ORG has already been set\n");
+                    ERROR("%s", "ORG has already been set");
                 }
             }
             else if (d.type == CONSTANT) {
@@ -437,12 +429,13 @@ int load_program(cpu *cpu, const char *file_path) {
     for (uint8_t i = 0; i < label_count; ++i) {
         printf("%s : %u\n", labels[i].label, labels[i].operand.value);
     }
+    printf("\n");
 
     if (org_program == 0xFFFF) {
-        printf("ERROR: ORG has not been set!\n");
-        return 0;
+        ERROR("%s", "ORG has not been set!\n");
     }
 
+    printf("INFO: First pass done with success\n");
     rewind(f);
 
     uint16_t addr = org_program;
@@ -455,12 +448,10 @@ int load_program(cpu *cpu, const char *file_path) {
         // Remove \n from buffer
         buf[strcspn(buf, "\n")] = '\0';
         if (str_empty(buf)) {
-            printf("empty\n");
             continue;
         }
         str_tolower(buf);
         if (is_directive(buf)) {
-            printf("skipping directive %s\n", buf);
             continue;
         }
         printf("Read %s\n", buf);
@@ -495,7 +486,7 @@ int main() {
     cpu c = (cpu) {0};
 
     printf("\nLoad Program\n");
-    if (!load_program(&c, "f.asm")) {
+    if (!load_program(&c, file_name)) {
         return 0;
     }
     printf("\nProgram loaded\n");
