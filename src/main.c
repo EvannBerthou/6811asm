@@ -296,6 +296,9 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
     }
     uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
     operand_type type = get_operand_type(str, operand_value);
+    if (type == NONE) {
+        return empty_operand;
+    }
     return (operand) {operand_value, type};
 }
 
@@ -324,6 +327,9 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     if (need_operand) {
         operand op = get_operand_value(parts[1], labels, label_count);
         if (op.type == NONE) {
+            printf("Invalid operand for ");
+            for (uint8_t i = 0; i < nb_parts; i++) printf("%s ", parts[i]);
+            printf("\n");
             return nop_mnemonic;
         }
         result.operand = op;

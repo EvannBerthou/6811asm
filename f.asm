@@ -1,4 +1,4 @@
-START equ $C055
+START equ $55
 VA equ #10
 
 org START
