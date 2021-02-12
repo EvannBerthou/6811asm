@@ -322,18 +322,20 @@ mnemonic line_to_mnemonic(char *line) {
     return result;
 }
 
-void add_mnemonic_to_memory(cpu *cpu, mnemonic *m) {
-    cpu->memory[cpu->pc++] = m->opcode;
+uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
+    uint8_t written = 0; // Number of bytes written
+    cpu->memory[addr + (written++)] = m->opcode;
     if (m->operand_type != NONE) {
         // Only extended uses 2 bytes for the operand
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
         if (m->operand_type == EXTENDED) {
-            cpu->memory[cpu->pc++] = (m->operand >> 8) & 0xFF;
-            cpu->memory[cpu->pc++] = m->operand & 0xFF;
+            cpu->memory[addr + written++] = (m->operand >> 8) & 0xFF;
+            cpu->memory[addr + written++] = m->operand & 0xFF;
         } else {
-            cpu->memory[cpu->pc++] = m->operand & 0xFF;
+            cpu->memory[addr + written++] = m->operand & 0xFF;
         }
     }
+    return written;
 }
 
 // TODO: Handle errors
@@ -354,9 +356,28 @@ directive line_to_directive(char *line) {
         if (parts[2][0] == '$' && operand <= 0xFF) result.operand_type = DIRECT;
         if (parts[2][0] == '$' && operand >  0xFF) result.operand_type = EXTENDED;
         return result;
-    } else { // No directive keyword
-        return (directive) {0, NONE, NOT_A_DIRECTIVE};
     }
+    if (strstr(line, "org")) {
+        char *parts[2] = {0};
+        uint8_t nb_parts = split_by_space(line, parts, 2);
+        if (nb_parts != 2) {
+            printf("ORG format : equ <ADDR> ($<VALUE>)\n");
+            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+        }
+        uint32_t operand = get_operand_value(parts[1]);
+        if (operand > 0xFFFF) {
+            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+        }
+        directive result = {operand, NONE, ORG};
+        if (parts[1][0] != '$') {
+            printf("ORG format : equ <ADDR> ($<VALUE>)\n");
+            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+        }
+        result.operand_type = EXTENDED;
+        return result;
+    }
+
+    return (directive) {0, NONE, NOT_A_DIRECTIVE};
 }
 
 int str_empty(const char *str) {
@@ -367,14 +388,13 @@ int str_empty(const char *str) {
 }
 
 int load_program(cpu *cpu, const char *file_path) {
-    const int org = 0xC000; // TODO: SHOULD BE DETERMINED IN THE CODE
-    cpu->pc = org;
     FILE *f = fopen(file_path, "r");
     if (!f) {
         printf("Error opennig file : %s\n", file_path);
         return 0;
     }
 
+    uint16_t org_program = 0xFFFF;
     // first pass
     char buf[100];
     for (;;) {
@@ -389,12 +409,26 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         directive d = line_to_directive(buf);
         if (d.type != NOT_A_DIRECTIVE) {
+            if (d.type == ORG) {
+                if (org_program == 0xFFFF) { // If ORG has already been set
+                    org_program = d.operand;
+                } else {
+                    printf("WARNING: ORG has already been set\n");
+                }
+            }
             printf("Directive operand: %d\n", d.operand);
             // Added this constant to an array
         }
     }
 
+    if (org_program == 0xFFFF) {
+        printf("ERROR: ORG has not been set!\n");
+        return 0;
+    }
+
     rewind(f);
+    uint16_t addr = org_program;
+    cpu->pc = org_program;
     // second pass
     for (;;) {
         if (fgets(buf, 100, f) == NULL) {
@@ -409,11 +443,13 @@ int load_program(cpu *cpu, const char *file_path) {
         if (strstr(buf, "equ") != NULL) {
             continue;
         }
+        if (strstr(buf, "org") != NULL) {
+            continue;
+        }
         printf("Read %s\n", buf);
         mnemonic m = line_to_mnemonic(buf);
-        add_mnemonic_to_memory(cpu, &m);
+        addr += add_mnemonic_to_memory(cpu, &m, addr);
     }
-    cpu->pc = org;
     return 1;
 }
 
@@ -439,55 +475,7 @@ int main() {
     instr_func[0xD6] = INST_LDB_DIR;
     instr_func[0xF6] = INST_LDB_EXT;
     instr_func[0x1B] = INST_ABA;
-    cpu c = {0};
-
-    printf("Registers\n");
-    write_register(&c, ACC_A, 0x33);
-    write_register(&c, ACC_B, 0x66);
-    read_register(&c, ACC_A);
-    read_register(&c, ACC_B);
-    read_register(&c, ACC_D);
-    write_register(&c, ACC_A, 0x36);
-    read_register(&c, ACC_D);
-
-    printf("\nMemory\n");
-    write_memory(&c, 0x0, 0x38);
-    read_memory(&c, 0x0);
-
-    write_memory(&c, 0xFFFF, 0x87);
-    read_memory(&c, 0xFFFF);
-
-    print_memory_range(&c, 0xC000, 10);
-
-    printf("\nLDAA IMM\n");
-    write_memory(&c, 0xC001, 0x22);
-    c.pc = 0xC000;
-    INST_LDA_IMM(&c);
-    printf("ACC A: %02x\n", c.a);
-
-    printf("\nLDAA DIR\n");
-    write_memory(&c, 0xC001, 0x00);
-    write_memory(&c, 0x00, 0x37);
-    c.pc = 0xC000;
-    INST_LDA_DIR(&c);
-    printf("ACC A: %02x\n", c.a);
-
-    printf("\nLDAA EXT\n");
-    write_memory(&c, 0xC001, 0x30);
-    write_memory(&c, 0xC002, 0x56);
-    write_memory(&c, 0x3056, 0xFF);
-    c.pc = 0xC000;
-    INST_LDA_EXT(&c);
-    printf("ACC A: %02x\n", c.a);
-
-    printf("\nstring to mnemonic\n");
-    char str[100];
-    strcpy(str, "ldaa #20FF\n");
-    mnemonic m = line_to_mnemonic(str);
-    printf(FMT8" "FMT16"\n", m.opcode, m.operand);
-
-    // Clear the cpu
-    c = (cpu) {0};
+    cpu c = (cpu) {0};
 
     printf("\nLoad Program\n");
     if (!load_program(&c, "f.asm")) {
@@ -499,6 +487,7 @@ int main() {
     printf("\nExec program\n");
     write_memory(&c, 0x20, 0xFF);
     write_memory(&c, 0x3000, 0x30);
+    print_cpu_state(&c);
     printf("\nStarting execution\n");
     exec_program(&c);
     print_cpu_state(&c);
