@@ -10,7 +10,6 @@
 #define FMT8 "0x%02x"
 #define FMT16 "0x%04x"
 
-
 const char *strdup(const char *base) {
     size_t len = strlen(base);
     char *str = calloc(len + 1, sizeof(char));
@@ -80,6 +79,11 @@ instruction instructions[] = {
         .names = {"ldab", "ldb"}, .name_count = 2,
         .codes = {[IMMEDIATE]=0xC6, [DIRECT]=0xD6, [EXTENDED]=0xF6},
         .operands = { IMMEDIATE, EXTENDED, DIRECT }
+    },
+    {
+        .names = {"staa", "sta"}, .name_count = 2,
+        .codes = {[DIRECT]=0x97, [EXTENDED]=0xB7},
+        .operands = { DIRECT, EXTENDED }
     },
     {
         .names = {"aba"}, .name_count = 1,
@@ -181,6 +185,16 @@ void INST_LDB_EXT(cpu *cpu) {
 void INST_ABA(cpu *cpu) {
     uint8_t result = (cpu->a + cpu->b) & 0xFF;
     cpu->a = result;
+}
+
+void INST_STA_DIR(cpu *cpu) {
+    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    cpu->memory[addr] = cpu->a;
+}
+
+void INST_STA_EXT(cpu *cpu) {
+    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    cpu->memory[addr] = cpu->a;
 }
 
 /*****************************
@@ -313,8 +327,8 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
 
 // TODO: Check labels array for operands
 mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
-    char *parts[10] = {0};
-    uint8_t nb_parts = split_by_space(line, parts, 10);
+    char *parts[3] = {0};
+    uint8_t nb_parts = split_by_space(line, parts, 3);
     if (nb_parts > 2) {
         ERROR("`%s` %s", line, "has many operands");
     }
@@ -333,7 +347,11 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     if (need_operand) {
         result.operand = get_operand_value(parts[1], labels, label_count);
     }
-    result.opcode = inst->codes[inst->operands[result.operand.type]];
+
+    result.opcode = inst->codes[result.operand.type];
+    if (result.opcode == 0) {
+        result.opcode = inst->codes[inst->operands[result.operand.type]];
+    }
     return result;
 }
 
@@ -446,7 +464,7 @@ int load_program(cpu *cpu, const char *file_path) {
         if (fgets(buf, 100, f) == NULL) {
             break;
         }
-        // Remove \n from buffer
+        // Remove \n from buffer buf[strcspn(buf, "\n")] = '\0'; if (str_empty(buf)) {
         buf[strcspn(buf, "\n")] = '\0';
         if (str_empty(buf)) {
             continue;
@@ -459,13 +477,14 @@ int load_program(cpu *cpu, const char *file_path) {
         mnemonic m = line_to_mnemonic(buf, labels, label_count);
         addr += add_mnemonic_to_memory(cpu, &m, addr);
     }
+    cpu->memory[addr] = 0x01;
     return 1;
 }
 
 void (*instr_func[0xFF]) (cpu *cpu) = {INST_NOP};
 
 void exec_program(cpu *cpu) {
-    while (cpu->memory[cpu->pc] != 0x0) {
+    while (cpu->memory[cpu->pc] != 0x01) {
         uint8_t inst = cpu->memory[cpu->pc];
         printf("Executing "FMT8" instruction\n", inst);
         if (instr_func[inst] != NULL) {
@@ -484,6 +503,8 @@ int main() {
     instr_func[0xD6] = INST_LDB_DIR;
     instr_func[0xF6] = INST_LDB_EXT;
     instr_func[0x1B] = INST_ABA;
+    instr_func[0x97] = INST_STA_DIR;
+    instr_func[0xB7] = INST_STA_EXT;
     cpu c = (cpu) {0};
 
     INFO("Loading program");
@@ -491,6 +512,7 @@ int main() {
         return 0;
     }
     INFO("Loading sucess");
+    print_cpu_state(&c);
 
     INFO("Execution program");
     exec_program(&c);
