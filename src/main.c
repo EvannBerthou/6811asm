@@ -168,7 +168,6 @@ void INST_ABA(cpu *cpu) {
     cpu->a = result;
 }
 
-
 /*****************************
 *           Utils            *
 *****************************/
@@ -196,48 +195,9 @@ void print_cpu_state(cpu *cpu) {
     print_memory_range(cpu, cpu->pc, 10);
 }
 
-const char *register_name(register_type rt) {
-    switch (rt) {
-    case ACC_A: return "ACC A";
-    case ACC_B: return "ACC B";
-    case ACC_D: return "ACC D";
-    default: return "Undefined";
-    }
-}
-
-uint16_t read_register(cpu *cpu, register_type rt) {
-    uint16_t value = 0;
-    switch (rt) {
-    case ACC_A: value = cpu->a; break;
-    case ACC_B: value = cpu->b; break;
-    case ACC_D: value = cpu->d; break;
-    default: break;
-    }
-    printf("Reading %s: " FMT16 "\n", register_name(rt), value);
-    return value;
-}
-
-void write_register(cpu *cpu, register_type rt, uint16_t value) {
-    // Only keep the highest and lowest 8 bits for acc_a and acc_b respectively.
-    // Keep the value as it is for acc_d.
-    printf("Writing %s: %04x\n", register_name(rt), value);
-    switch (rt) {
-    case ACC_A: cpu->a = value; break;
-    case ACC_B: cpu->b = value; break;
-    case ACC_D: cpu->d = value; break;
-    default: break;
-    }
-}
-
-void write_memory(cpu *cpu, uint16_t pos, uint8_t value) {
-    printf("Writing at %04x: %04x\n", pos, value);
-    cpu->memory[pos] = value;
-}
-
-uint8_t read_memory(cpu *cpu, uint16_t pos) {
-    printf("Reading at %04x: %04x\n", pos, cpu->memory[pos]);
-    return cpu->memory[pos];
-}
+/*****************************
+*          Assembly          *
+*****************************/
 
 directive *get_directive_by_label(const char *label, directive *labels, uint8_t label_count) {
     for (uint8_t i = 0; i < label_count; ++i) {
@@ -513,14 +473,11 @@ int main() {
         return 0;
     }
     printf("\nProgram loaded\n");
-    print_memory_range(&c, 0xC000, 10);
+    print_cpu_state(&c);
 
     printf("\nExec program\n");
-    write_memory(&c, 0x20, 0xFF);
-    write_memory(&c, 0x3000, 0x30);
-    print_cpu_state(&c);
-    printf("\nStarting execution\n");
     exec_program(&c);
+    printf("\nExecution ended\n");
     print_cpu_state(&c);
 }
 
