@@ -68,7 +68,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
 
 ## TODO
 - Assembleur
-    - Ajouter de 2 passages
     - Ajoute des constantes (equ)
     - Ajout des ports
     - Implémentation de toutes les instructions

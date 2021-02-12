@@ -354,7 +354,6 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     return written;
 }
 
-// TODO: Handle errors
 directive line_to_directive(char *line, directive *labels, uint8_t label_count) {
     if (strstr(line, "equ")) {
         char *parts[3] = {0};
