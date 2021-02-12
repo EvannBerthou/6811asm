@@ -283,6 +283,20 @@ uint8_t is_branch(const char *str) {
     return 0;
 }
 
+uint8_t is_inherent(const char *str) {
+    for (uint8_t i = 0; i < INSTRUCTION_COUNT; ++i) {
+        instruction *op = &instructions[i];
+        for (int j = 0; j < op->name_count; ++j) {
+            if (strcmp(str, op->names[j]) == 0) {
+                if (op->codes[INHERENT] != 0x0) {
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 /*****************************
 *          Assembly          *
 *****************************/
@@ -399,12 +413,19 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     uint8_t branch = is_branch(parts[0]);
     if (need_operand) {
         result.operand = get_operand_value(parts[1], labels, label_count, branch);
+    } else {
+        result.operand.type = NONE;
     }
 
     result.opcode = inst->codes[result.operand.type];
     if (result.opcode == 0) {
-        result.opcode = inst->codes[inst->operands[result.operand.type]];
+        if (is_inherent(line)) {
+            result.opcode = inst->codes[INHERENT];
+        } else {
+            result.opcode = inst->codes[inst->operands[result.operand.type]];
+        }
     }
+    printf("%s %u\n", line,result.opcode);
     return result;
 }
 
@@ -417,7 +438,7 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
         if (m->operand.type == EXTENDED) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
             cpu->memory[addr + written++] = m->operand.value & 0xFF;
-        } else {
+        } else if (m->operand.type != NONE) {
             cpu->memory[addr + written++] = m->operand.value & 0xFF;
         }
     }
@@ -528,16 +549,17 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         printf("Read %s\n", buf);
         mnemonic m = line_to_mnemonic(buf, labels, label_count);
-        addr += add_mnemonic_to_memory(cpu, &m, addr);
+        uint8_t add = add_mnemonic_to_memory(cpu, &m, addr);
+        printf("%u\n", add);
+        addr += add;
     }
-    cpu->memory[addr] = 0x01;
     return 1;
 }
 
 void (*instr_func[0x100]) (cpu *cpu) = {INST_NOP};
 
 void exec_program(cpu *cpu) {
-    while (cpu->memory[cpu->pc] != 0x01) {
+    while (cpu->memory[cpu->pc] != 0x00) {
         uint8_t inst = cpu->memory[cpu->pc];
         printf("Executing "FMT8" instruction\n", inst);
         if (instr_func[inst] != NULL) {
