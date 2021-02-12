@@ -4,7 +4,7 @@ org START
 lda #6
 ldb #5
 aba
-sta $0
-lda #6
-ldb $0
+stb $0
+lda $0
+ldb #2
 aba

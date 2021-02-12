@@ -86,6 +86,11 @@ instruction instructions[] = {
         .operands = { DIRECT, EXTENDED }
     },
     {
+        .names = {"stab", "stb"}, .name_count = 2,
+        .codes = {[DIRECT]=0xD7, [EXTENDED]=0xF7},
+        .operands = { DIRECT, EXTENDED }
+    },
+    {
         .names = {"aba"}, .name_count = 1,
         .codes = {[INHERENT]=0x1B},
         .operands = { INHERENT }
@@ -195,6 +200,16 @@ void INST_STA_DIR(cpu *cpu) {
 void INST_STA_EXT(cpu *cpu) {
     uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
     cpu->memory[addr] = cpu->a;
+}
+
+void INST_STB_DIR(cpu *cpu) {
+    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    cpu->memory[addr] = cpu->b;
+}
+
+void INST_STB_EXT(cpu *cpu) {
+    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    cpu->memory[addr] = cpu->b;
 }
 
 /*****************************
@@ -505,6 +520,8 @@ int main() {
     instr_func[0x1B] = INST_ABA;
     instr_func[0x97] = INST_STA_DIR;
     instr_func[0xB7] = INST_STA_EXT;
+    instr_func[0xD7] = INST_STB_DIR;
+    instr_func[0xF7] = INST_STB_EXT;
     cpu c = (cpu) {0};
 
     INFO("Loading program");
