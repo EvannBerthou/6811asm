@@ -65,10 +65,7 @@ typedef struct {
     directive_type type;
 } directive;
 
-mnemonic nop_mnemonic = {.opcode = 0x1, .operand = {.value = 0, .type = NONE}};
-operand empty_operand = {.value = 0, .type = NONE};
-directive empty_directive = {.label = NULL, .operand = {.value = 0, .type = NONE}, .type = NOT_A_DIRECTIVE};
-
+// TODO: Rewrite this
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -108,17 +105,6 @@ const char *directives_name[] = { "org", "equ" };
 
 const char *branches_code[] = { "bra" };
 #define BRANCHES_COUNT ((uint8_t)(sizeof(branches_code) / sizeof(branches_code[0])))
-
-
-typedef enum {
-    ACC_A,
-    ACC_B,
-    ACC_D,
-    ACC_X,
-    ACC_Y,
-    SP,
-    PC
-} register_type;
 
 typedef struct {
     union {
@@ -223,7 +209,6 @@ void INST_STB_EXT(cpu *cpu) {
 void INST_BRA(cpu *cpu) {
     printf("Before jump "FMT8"\n", cpu->pc);
     uint8_t jmp = cpu->memory[++cpu->pc]; // Get value of the next operand
-    printf("%d\n", cpu->pc + jmp);
     cpu->pc += (int8_t) jmp;
     printf("After jump "FMT8"\n", cpu->pc);
 }
@@ -231,6 +216,13 @@ void INST_BRA(cpu *cpu) {
 /*****************************
 *           Utils            *
 *****************************/
+
+int str_empty(const char *str) {
+    do {
+        if (*str != '\0' && *str != ' ' && *str != '\n') return 0;
+    } while(*str++ != '\0');
+    return 1;
+}
 
 void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
     for (uint16_t i = 0; i < len; ++i) {
@@ -252,6 +244,15 @@ void print_cpu_state(cpu *cpu) {
 
     printf("Next memory range\n");
     print_memory_range(cpu, cpu->pc, 10);
+}
+
+directive *get_directive_by_label(const char *label, directive *labels, uint8_t label_count) {
+    for (uint8_t i = 0; i < label_count; ++i) {
+        if (strcmp(label, labels[i].label) == 0) {
+            return &labels[i];
+        }
+    }
+    return NULL;
 }
 
 uint8_t is_directive(const char *str) {
@@ -297,19 +298,6 @@ uint8_t is_inherent(const char *str) {
     return 0;
 }
 
-/*****************************
-*          Assembly          *
-*****************************/
-
-directive *get_directive_by_label(const char *label, directive *labels, uint8_t label_count) {
-    for (uint8_t i = 0; i < label_count; ++i) {
-        if (strcmp(label, labels[i].label) == 0) {
-            return &labels[i];
-        }
-    }
-    return NULL;
-}
-
 uint8_t split_by_space(char *str, char **out, uint8_t n) {
     assert(str);
     assert(n);
@@ -336,6 +324,10 @@ uint8_t split_by_space(char *str, char **out, uint8_t n) {
     }
     return nb_parts;
 }
+
+/*****************************
+*          Assembly          *
+*****************************/
 
 instruction * opcode_str_to_hex(const char *str) {
     for (int i = 0; i < INSTRUCTION_COUNT; ++i) {
@@ -469,14 +461,7 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         return (directive) {NULL, {operand.value, EXTENDED}, ORG};
     }
 
-    return empty_directive;
-}
-
-int str_empty(const char *str) {
-    do {
-        if (*str != '\0' && *str != ' ' && *str != '\n') return 0;
-    } while(*str++ != '\0');
-    return 1;
+    return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
 }
 
 int load_program(cpu *cpu, const char *file_path) {

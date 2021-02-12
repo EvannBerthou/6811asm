@@ -61,20 +61,19 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
 
 - ORG <expression> : Permet de définir l'adresse de départ du programme.
 - LABEL EQU <expression> : Permet de définir des constantes aux programmes. Même principe que les defines en C.
-    Le caractères ```*``` fait référence au PC courant. C'est-à-dire que ```*``` fait à la ligne en cours d'exécution.
+    Le caractères ```*``` fait référence au PC courant. C'est-à-dire que ```*``` fait référence à la ligne en cours d'exécution.
 - [Label] RMB <expression> : Permet de faire avancer le PC de <expression> bytes.
 - [LABEL] FCC <séparateur><string><séparateur> : Permet de définir des chaines de caractères constantes. Les séparateurs doivent être égaux. Exemple : FFC "Hello, world".
 - ... Il en existe d'autres mais pas encore implémentées.
 
 ## TODO
 - Assembleur
-    - Ajoute des constantes (equ)
+    - Support des labels pour les branches
     - Ajout des ports
     - Implémentation de toutes les instructions
     - Interrupts
     - Gestion des ports (PORTx + DDRx)
-
-- Retrouver le nom d'une instruction en fonction de son opcode
+    - Modification du registre status
 
 - Execution
     - Execution pas à pas
