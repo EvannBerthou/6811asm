@@ -2,6 +2,6 @@ START equ $C000
 VA equ #50
 
 org $10
-lda VA
+lda VB
 ldb #3
 aba

@@ -230,6 +230,15 @@ uint8_t read_memory(cpu *cpu, uint16_t pos) {
     return cpu->memory[pos];
 }
 
+directive *get_directive_by_label(const char *label, directive *labels, uint8_t label_count) {
+    for (uint8_t i = 0; i < label_count; ++i) {
+        if (strcmp(label, labels[i].label) == 0) {
+            return &labels[i];
+        }
+    }
+    return NULL;
+}
+
 uint8_t split_by_space(char *str, char **out, uint8_t n) {
     assert(str);
     assert(n);
@@ -318,25 +327,25 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     mnemonic result = {0};
     if (need_operand) {
         const char *operand_str = parts[1];
+        uint16_t operand;
+        operand_type operand_type;
 
-        // Checks if the operand is a label
-        for (uint8_t i = 0; i < label_count; ++i) {
-            if (strcmp(parts[1], labels[i].label) == 0) {
-                printf("USING %s : %u\n", labels[i].label, labels[i].operand);
-                result.operand = labels[i].operand;
-                result.operand_type = labels[i].operand_type;
-                result.opcode = inst->codes[inst->operands[result.operand_type]];
-                return result;
+        const directive *directive = get_directive_by_label(operand_str, labels, label_count);
+        if (directive != NULL) {
+            printf("Label found (%s) with value %u\n", directive->label, directive->operand);
+            operand       = directive->operand;
+            operand_type  = directive->operand_type;
+        } else {
+            // Check if operand_str is inside the label array and if so, use the operand of the label
+            uint32_t operand_value = get_operand_value(operand_str);
+            if (operand_value > 0xFFFF) { // Error while parsing
+                return nop_mnemonic;
             }
+            operand = (uint16_t) operand_value;
+            operand_type = get_operand_type(operand_str, result.operand);
         }
-
-        // Check if operand_str is inside the label array and if so, use the operand of the label
-        uint32_t operand_value = get_operand_value(operand_str);
-        if (operand_value > 0xFFFF) { // Error while parsing
-            return nop_mnemonic;
-        }
-        result.operand = (uint16_t) operand_value;
-        result.operand_type = get_operand_type(operand_str, result.operand);
+        result.operand = operand;
+        result.operand_type = operand_type;
     }
     result.opcode = inst->codes[inst->operands[result.operand_type]];
 
