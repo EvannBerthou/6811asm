@@ -62,6 +62,8 @@ typedef struct {
 } directive;
 
 mnemonic nop_mnemonic = {.opcode = 0x1, .operand = {.value = 0, .type = NONE}};
+operand empty_operand = {.value = 0, .type = NONE};
+directive empty_directive = {.label = NULL, .operand = {.value = 0, .type = NONE}, .type = NOT_A_DIRECTIVE};
 
 instruction instructions[] = {
     {
@@ -281,6 +283,14 @@ instruction * opcode_str_to_hex(const char *str) {
     return NULL;
 }
 
+// Returns operand type based on prefix and operand_value
+operand_type get_operand_type(const char *str, uint16_t value) {
+    if (str[0] == '#')                  return IMMEDIATE;
+    if (str[0] == '$' && value <= 0xFF) return DIRECT;
+    if (str[0] == '$' && value >  0xFF) return EXTENDED;
+    return NONE;
+}
+
 operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
     const directive *directive = get_directive_by_label(str, labels, label_count);
     if (directive != NULL) {
@@ -288,28 +298,19 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
         return (operand) {directive->operand.value, directive->operand.type};
     }
 
-    const char *operand_str = str;
-
     // Find where the number starts (skips non digit but keeps hex values)
-    const char *number_part = operand_str;
+    const char *number_part = str;
     while (!isdigit(*number_part) && (*number_part < 'A' || *number_part > 'C')) number_part++;
     // Convert to a number
     char *end;
     long l = strtol(number_part, &end, 16);
     if (l == 0 && number_part == end) {
-        printf("Error while parsing the operand %s\n", operand_str);
-        return (operand) {0, NONE}; // Error code
+        printf("Error while parsing the operand %s\n", str);
+        return empty_operand;
     }
     uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
-    return (operand) {operand_value, IMMEDIATE};
-}
-
-// Returns operand type based on prefix and operand_value
-operand_type get_operand_type(const char *str, uint16_t value) {
-    if (str[0] == '#')                  return IMMEDIATE;
-    if (str[0] == '$' && value <= 0xFF) return DIRECT;
-    if (str[0] == '$' && value >  0xFF) return EXTENDED;
-    return NONE;
+    operand_type type = get_operand_type(str, operand_value);
+    return (operand) {operand_value, type};
 }
 
 // TODO: Check labels array for operands
@@ -335,10 +336,13 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
 
     mnemonic result = {0};
     if (need_operand) {
-        result.operand = get_operand_value(parts[1], labels, label_count);
+        operand op = get_operand_value(parts[1], labels, label_count);
+        if (op.type == NONE) {
+            return nop_mnemonic;
+        }
+        result.operand = op;
     }
     result.opcode = inst->codes[inst->operands[result.operand.type]];
-
     return result;
 }
 
@@ -365,11 +369,11 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         uint8_t nb_parts = split_by_space(line, parts, 3);
         if (nb_parts != 3) {
             printf("equ format : <LABEL> equ <VALUE>\n");
-            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
+            return empty_directive;
         }
         operand operand = get_operand_value(parts[2], labels, label_count);
         if (operand.type == NONE) {
-            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
+            return empty_directive;
         }
         directive result = {NULL, {operand.value, operand.type}, CONSTANT};
         if (parts[2][0] == '#') result.operand.type = IMMEDIATE;
@@ -383,22 +387,18 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         uint8_t nb_parts = split_by_space(line, parts, 2);
         if (nb_parts != 2) {
             printf("ORG format : equ <ADDR> ($<VALUE>)\n");
-            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
+            return empty_directive;
         }
+
         operand operand = get_operand_value(parts[1], labels, label_count);
         if (operand.type == NONE) {
-            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
+            printf("No operand found\n");
+            return empty_directive;
         }
-        directive result = {NULL, {operand.value, operand.type}, ORG};
-        if (parts[1][0] != '$') {
-            printf("ORG format : equ <ADDR> ($<VALUE>)\n");
-            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
-        }
-        result.operand.type = EXTENDED;
-        return result;
+        return (directive) {NULL, {operand.value, EXTENDED}, ORG};
     }
 
-    return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
+    return empty_directive;
 }
 
 int str_empty(const char *str) {
@@ -434,6 +434,7 @@ int load_program(cpu *cpu, const char *file_path) {
         directive d = line_to_directive(buf, labels, label_count);
         if (d.type != NOT_A_DIRECTIVE) {
             if (d.type == ORG) {
+                printf("dop: %u\n", d.operand.value);
                 if (org_program == 0xFFFF) { // If ORG has already been set
                     org_program = d.operand.value;
                 } else {
@@ -450,7 +451,6 @@ int load_program(cpu *cpu, const char *file_path) {
     for (uint8_t i = 0; i < label_count; ++i) {
         printf("%s : %u\n", labels[i].label, labels[i].operand.value);
     }
-
 
     if (org_program == 0xFFFF) {
         printf("ERROR: ORG has not been set!\n");
