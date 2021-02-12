@@ -126,6 +126,8 @@ uint32_t file_line = 0;
     exit(1); \
 } while (0)
 
+#define INFO(f_) printf("[INFO] "f_"\n")
+
 
 /*****************************
 *        Instructions        *
@@ -192,7 +194,6 @@ void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
 }
 
 void print_cpu_state(cpu *cpu) {
-    printf("\n");
     printf("ACC A: "FMT8"\n", cpu->a);
     printf("ACC B: "FMT8"\n", cpu->b);
     printf("ACC D: "FMT16"\n", cpu->d);
@@ -435,7 +436,7 @@ int load_program(cpu *cpu, const char *file_path) {
         ERROR("%s", "ORG has not been set!\n");
     }
 
-    printf("INFO: First pass done with success\n");
+    INFO("First pass done with success");
     rewind(f);
 
     uint16_t addr = org_program;
@@ -485,16 +486,15 @@ int main() {
     instr_func[0x1B] = INST_ABA;
     cpu c = (cpu) {0};
 
-    printf("\nLoad Program\n");
+    INFO("Loading program");
     if (!load_program(&c, file_name)) {
         return 0;
     }
-    printf("\nProgram loaded\n");
-    print_cpu_state(&c);
+    INFO("Loading sucess");
 
-    printf("\nExec program\n");
+    INFO("Execution program");
     exec_program(&c);
-    printf("\nExecution ended\n");
+    INFO("Execution ended");
     print_cpu_state(&c);
 }
 
