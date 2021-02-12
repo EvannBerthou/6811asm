@@ -46,19 +46,22 @@ typedef struct {
 } instruction;
 
 typedef struct {
+    uint16_t value;
+    operand_type type;
+} operand;
+
+typedef struct {
     uint8_t opcode;
-    uint16_t operand;
-    operand_type operand_type;
+    operand operand;
 } mnemonic;
 
 typedef struct {
     const char *label;
-    uint16_t operand;
-    operand_type operand_type;
+    operand operand;
     directive_type type;
 } directive;
 
-mnemonic nop_mnemonic = {.opcode = 0x1, .operand = 0, .operand_type = NONE};
+mnemonic nop_mnemonic = {.opcode = 0x1, .operand = {.value = 0, .type = NONE}};
 
 instruction instructions[] = {
     {
@@ -278,7 +281,13 @@ instruction * opcode_str_to_hex(const char *str) {
     return NULL;
 }
 
-uint32_t get_operand_value(const char *str) {
+operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
+    const directive *directive = get_directive_by_label(str, labels, label_count);
+    if (directive != NULL) {
+        printf("Label found (%s) with value %u\n", directive->label, directive->operand.value);
+        return (operand) {directive->operand.value, directive->operand.type};
+    }
+
     const char *operand_str = str;
 
     // Find where the number starts (skips non digit but keeps hex values)
@@ -289,10 +298,10 @@ uint32_t get_operand_value(const char *str) {
     long l = strtol(number_part, &end, 16);
     if (l == 0 && number_part == end) {
         printf("Error while parsing the operand %s\n", operand_str);
-        return 0xFFFFFFFF; // Error code
+        return (operand) {0, NONE}; // Error code
     }
     uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
-    return operand_value;
+    return (operand) {operand_value, IMMEDIATE};
 }
 
 // Returns operand type based on prefix and operand_value
@@ -326,28 +335,9 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
 
     mnemonic result = {0};
     if (need_operand) {
-        const char *operand_str = parts[1];
-        uint16_t operand;
-        operand_type operand_type;
-
-        const directive *directive = get_directive_by_label(operand_str, labels, label_count);
-        if (directive != NULL) {
-            printf("Label found (%s) with value %u\n", directive->label, directive->operand);
-            operand       = directive->operand;
-            operand_type  = directive->operand_type;
-        } else {
-            // Check if operand_str is inside the label array and if so, use the operand of the label
-            uint32_t operand_value = get_operand_value(operand_str);
-            if (operand_value > 0xFFFF) { // Error while parsing
-                return nop_mnemonic;
-            }
-            operand = (uint16_t) operand_value;
-            operand_type = get_operand_type(operand_str, result.operand);
-        }
-        result.operand = operand;
-        result.operand_type = operand_type;
+        result.operand = get_operand_value(parts[1], labels, label_count);
     }
-    result.opcode = inst->codes[inst->operands[result.operand_type]];
+    result.opcode = inst->codes[inst->operands[result.operand.type]];
 
     return result;
 }
@@ -355,36 +345,36 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
 uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     uint8_t written = 0; // Number of bytes written
     cpu->memory[addr + (written++)] = m->opcode;
-    if (m->operand_type != NONE) {
+    if (m->operand.type != NONE) {
         // Only extended uses 2 bytes for the operand
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
-        if (m->operand_type == EXTENDED) {
-            cpu->memory[addr + written++] = (m->operand >> 8) & 0xFF;
-            cpu->memory[addr + written++] = m->operand & 0xFF;
+        if (m->operand.type == EXTENDED) {
+            cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
+            cpu->memory[addr + written++] = m->operand.value & 0xFF;
         } else {
-            cpu->memory[addr + written++] = m->operand & 0xFF;
+            cpu->memory[addr + written++] = m->operand.value & 0xFF;
         }
     }
     return written;
 }
 
 // TODO: Handle errors
-directive line_to_directive(char *line) {
+directive line_to_directive(char *line, directive *labels, uint8_t label_count) {
     if (strstr(line, "equ")) {
         char *parts[3] = {0};
         uint8_t nb_parts = split_by_space(line, parts, 3);
         if (nb_parts != 3) {
             printf("equ format : <LABEL> equ <VALUE>\n");
-            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
+            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
         }
-        uint32_t operand = get_operand_value(parts[2]);
-        if (operand > 0xFFFF) {
-            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
+        operand operand = get_operand_value(parts[2], labels, label_count);
+        if (operand.type == NONE) {
+            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
         }
-        directive result = {NULL, operand, NONE, CONSTANT};
-        if (parts[2][0] == '#') result.operand_type = IMMEDIATE;
-        if (parts[2][0] == '$' && operand <= 0xFF) result.operand_type = DIRECT;
-        if (parts[2][0] == '$' && operand >  0xFF) result.operand_type = EXTENDED;
+        directive result = {NULL, {operand.value, operand.type}, CONSTANT};
+        if (parts[2][0] == '#') result.operand.type = IMMEDIATE;
+        if (parts[2][0] == '$' && operand.value <= 0xFF) result.operand.type = DIRECT;
+        if (parts[2][0] == '$' && operand.value >  0xFF) result.operand.type = EXTENDED;
         result.label = strdup(parts[0]);
         return result;
     }
@@ -393,22 +383,22 @@ directive line_to_directive(char *line) {
         uint8_t nb_parts = split_by_space(line, parts, 2);
         if (nb_parts != 2) {
             printf("ORG format : equ <ADDR> ($<VALUE>)\n");
-            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
+            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
         }
-        uint32_t operand = get_operand_value(parts[1]);
-        if (operand > 0xFFFF) {
-            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
+        operand operand = get_operand_value(parts[1], labels, label_count);
+        if (operand.type == NONE) {
+            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
         }
-        directive result = {NULL, operand, NONE, ORG};
+        directive result = {NULL, {operand.value, operand.type}, ORG};
         if (parts[1][0] != '$') {
             printf("ORG format : equ <ADDR> ($<VALUE>)\n");
-            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
+            return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
         }
-        result.operand_type = EXTENDED;
+        result.operand.type = EXTENDED;
         return result;
     }
 
-    return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
+    return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
 }
 
 int str_empty(const char *str) {
@@ -441,11 +431,11 @@ int load_program(cpu *cpu, const char *file_path) {
             printf("empty\n");
             continue;
         }
-        directive d = line_to_directive(buf);
+        directive d = line_to_directive(buf, labels, label_count);
         if (d.type != NOT_A_DIRECTIVE) {
             if (d.type == ORG) {
                 if (org_program == 0xFFFF) { // If ORG has already been set
-                    org_program = d.operand;
+                    org_program = d.operand.value;
                 } else {
                     printf("WARNING: ORG has already been set\n");
                 }
@@ -453,14 +443,12 @@ int load_program(cpu *cpu, const char *file_path) {
             else if (d.type == CONSTANT) {
                 labels[label_count++] = d;
             }
-            printf("Directive operand: %d\n", d.operand);
-            // Added this constant to an array
         }
     }
 
     printf("Loaded %u labels\n", label_count);
     for (uint8_t i = 0; i < label_count; ++i) {
-        printf("%s : %u\n", labels[i].label, labels[i].operand);
+        printf("%s : %u\n", labels[i].label, labels[i].operand.value);
     }
 
 
