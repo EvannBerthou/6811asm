@@ -22,6 +22,7 @@ const char *strdup(const char *base) {
 }
 
 typedef enum {
+    NONE,
     IMMEDIATE,
     EXTENDED,
     DIRECT,
@@ -29,7 +30,6 @@ typedef enum {
     INDEXDED_Y,
     INHERENT,
     RELATIVE,
-    NONE,
     OPERAND_TYPE_COUNT
 } operand_type;
 
@@ -65,7 +65,6 @@ typedef struct {
     directive_type type;
 } directive;
 
-// TODO: Rewrite this
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -217,6 +216,17 @@ void INST_BRA(cpu *cpu) {
 *           Utils            *
 *****************************/
 
+uint8_t is_valid_operand_type(instruction *inst, operand_type type) {
+    operand_type *base = inst->operands;
+    while(*base != NONE) {
+        if (*base == type) {
+            return 1;
+        }
+        base++;
+    }
+    return 0;
+}
+
 int str_empty(const char *str) {
     do {
         if (*str != '\0' && *str != ' ' && *str != '\n') return 0;
@@ -284,20 +294,6 @@ uint8_t is_branch(const char *str) {
     return 0;
 }
 
-uint8_t is_inherent(const char *str) {
-    for (uint8_t i = 0; i < INSTRUCTION_COUNT; ++i) {
-        instruction *op = &instructions[i];
-        for (int j = 0; j < op->name_count; ++j) {
-            if (strcmp(str, op->names[j]) == 0) {
-                if (op->codes[INHERENT] != 0x0) {
-                    return 1;
-                }
-            }
-        }
-    }
-    return 0;
-}
-
 uint8_t split_by_space(char *str, char **out, uint8_t n) {
     assert(str);
     assert(n);
@@ -349,7 +345,7 @@ operand_type get_operand_type(const char *str, uint16_t value) {
     return NONE;
 }
 
-operand get_operand_value(const char *str, directive *labels, uint8_t label_count, uint8_t branch) {
+operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
     const directive *directive = get_directive_by_label(str, labels, label_count);
     if (directive != NULL) {
         return (operand) {directive->operand.value, directive->operand.type};
@@ -365,21 +361,9 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
         ERROR("%s %s", "is not a valid hex number", str);
     }
     uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
-    operand_type type;
-    // Only branch are using the RELATIVE Addressing mode
-    if (branch) {
-        type = RELATIVE;
-        if (operand_value > 0xFF) {
-            // Signed version
-            int16_t x = (int16_t) operand_value;
-            ERROR("%s%x is not between -128 and +127", x<0?"-":"", x<0?-(uint16_t)x:x);
-        }
-        operand_value = operand_value & 0xFF;
-    } else {
-        type = get_operand_type(str, operand_value);
-        if (type == NONE) {
-            ERROR("%s `%s` %s", "The operand", str, "is neither a constant or a label");
-        }
+    operand_type type = get_operand_type(str, operand_value);
+    if (type == NONE) {
+        ERROR("%s `%s` %s", "The operand", str, "is neither a constant or a label");
     }
     return (operand) {operand_value, type};
 }
@@ -402,22 +386,25 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     }
 
     mnemonic result = {0};
-    uint8_t branch = is_branch(parts[0]);
     if (need_operand) {
-        result.operand = get_operand_value(parts[1], labels, label_count, branch);
-    } else {
-        result.operand.type = NONE;
+        result.operand = get_operand_value(parts[1], labels, label_count);
+        if (inst->operands[0] == RELATIVE) {
+            result.operand.type = RELATIVE;
+            if (result.operand.value > 0xFF) {
+                ERROR("Relative addressing mode only supports 8 bits operands ("FMT16">0xFF)",
+                      result.operand.value);
+            }
+            result.operand.value = result.operand.value & 0xFF;
+        }
+        // Checks if the given addressig mode is used by this instruction
+        else if (!is_valid_operand_type(inst, result.operand.type)) {
+            ERROR("%s does not support %s addressing mode\n", parts[0], "TODO");
+        }
+    } else if (inst->operands[0] == INHERENT) {
+        result.operand.type = INHERENT;
     }
 
     result.opcode = inst->codes[result.operand.type];
-    if (result.opcode == 0) {
-        if (is_inherent(line)) {
-            result.opcode = inst->codes[INHERENT];
-        } else {
-            result.opcode = inst->codes[inst->operands[result.operand.type]];
-        }
-    }
-    printf("%s %u\n", line,result.opcode);
     return result;
 }
 
@@ -430,7 +417,7 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
         if (m->operand.type == EXTENDED) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
             cpu->memory[addr + written++] = m->operand.value & 0xFF;
-        } else if (m->operand.type != NONE) {
+        } else if (m->operand.type != NONE && m->operand.type != INHERENT) {
             cpu->memory[addr + written++] = m->operand.value & 0xFF;
         }
     }
@@ -444,7 +431,7 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         if (nb_parts != 3) {
             ERROR("%s", "equ format : <LABEL> equ <VALUE>\n");
         }
-        operand operand = get_operand_value(parts[2], labels, label_count, 0);
+        operand operand = get_operand_value(parts[2], labels, label_count);
         return (directive) {strdup(parts[0]), {operand.value, operand.type}, CONSTANT};
     }
     if (strstr(line, "org")) {
@@ -454,7 +441,7 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
             ERROR("%s", "ORG format : ORG <ADDR> ($<VALUE>)\n");
         }
 
-        operand operand = get_operand_value(parts[1], labels, label_count, 0);
+        operand operand = get_operand_value(parts[1], labels, label_count);
         if (operand.type == NONE) {
             ERROR("%s", "No operand found\n");
         }
@@ -534,9 +521,7 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         printf("Read %s\n", buf);
         mnemonic m = line_to_mnemonic(buf, labels, label_count);
-        uint8_t add = add_mnemonic_to_memory(cpu, &m, addr);
-        printf("%u\n", add);
-        addr += add;
+        addr += add_mnemonic_to_memory(cpu, &m, addr);
     }
     return 1;
 }
