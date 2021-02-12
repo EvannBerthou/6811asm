@@ -72,6 +72,7 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Ajout des ports
     - Implémentation de toutes les instructions
     - Interrupts
+    - Gestion des ports (PORTx + DDRx)
 
 - Retrouver le nom d'une instruction en fonction de son opcode
 

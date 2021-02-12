@@ -1,10 +1,8 @@
 START equ $C000
 
 org START
-lda #6
-ldb #5
+lda #1
+ldb #1
 aba
-stb $0
-lda $0
-ldb #2
+bra $FC
 aba

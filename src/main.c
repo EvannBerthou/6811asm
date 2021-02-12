@@ -95,11 +95,19 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x1B},
         .operands = { INHERENT }
     },
+    {
+        .names = {"bra"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x20},
+        .operands = { RELATIVE }
+    },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
 const char *directives_name[] = { "org", "equ" };
 #define DIRECTIVE_COUNT ((uint8_t)(sizeof(directives_name) / sizeof(directives_name[0])))
+
+const char *branches_code[] = { "bra" };
+#define BRANCHES_COUNT ((uint8_t)(sizeof(branches_code) / sizeof(branches_code[0])))
 
 
 typedef enum {
@@ -212,6 +220,14 @@ void INST_STB_EXT(cpu *cpu) {
     cpu->memory[addr] = cpu->b;
 }
 
+void INST_BRA(cpu *cpu) {
+    printf("Before jump "FMT8"\n", cpu->pc);
+    uint8_t jmp = cpu->memory[++cpu->pc]; // Get value of the next operand
+    printf("%d\n", cpu->pc + jmp);
+    cpu->pc += (int8_t) jmp;
+    printf("After jump "FMT8"\n", cpu->pc);
+}
+
 /*****************************
 *           Utils            *
 *****************************/
@@ -255,6 +271,16 @@ void str_tolower(char *str) {
     for (uint8_t i = 0; *str != '\0'; ++i, ++str) {
         *str = tolower(*str);
     }
+}
+
+uint8_t is_branch(const char *str) {
+    for (uint8_t i = 0; i < BRANCHES_COUNT; ++i) {
+        const char *substr = strstr(str, branches_code[i]);
+        if (substr != NULL) {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 /*****************************
@@ -317,7 +343,7 @@ operand_type get_operand_type(const char *str, uint16_t value) {
     return NONE;
 }
 
-operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
+operand get_operand_value(const char *str, directive *labels, uint8_t label_count, uint8_t branch) {
     const directive *directive = get_directive_by_label(str, labels, label_count);
     if (directive != NULL) {
         return (operand) {directive->operand.value, directive->operand.type};
@@ -325,7 +351,7 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
 
     // Find where the number starts (skips non digit but keeps hex values)
     const char *number_part = str;
-    while (!isdigit(*number_part) && (*number_part < 'a' || *number_part > 'c')) number_part++;
+    while (!isdigit(*number_part) && (*number_part < 'a' || *number_part > 'f')) number_part++;
     // Convert to a number
     char *end;
     long l = strtol(number_part, &end, 16);
@@ -333,14 +359,25 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
         ERROR("%s %s", "is not a valid hex number", str);
     }
     uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
-    operand_type type = get_operand_type(str, operand_value);
-    if (type == NONE) {
-        ERROR("%s `%s` %s", "The operand", str, "is neither a constant or a label");
+    operand_type type;
+    // Only branch are using the RELATIVE Addressing mode
+    if (branch) {
+        type = RELATIVE;
+        if (operand_value > 0xFF) {
+            // Signed version
+            int16_t x = (int16_t) operand_value;
+            ERROR("%s%x is not between -128 and +127", x<0?"-":"", x<0?-(uint16_t)x:x);
+        }
+        operand_value = operand_value & 0xFF;
+    } else {
+        type = get_operand_type(str, operand_value);
+        if (type == NONE) {
+            ERROR("%s `%s` %s", "The operand", str, "is neither a constant or a label");
+        }
     }
     return (operand) {operand_value, type};
 }
 
-// TODO: Check labels array for operands
 mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     char *parts[3] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 3);
@@ -359,8 +396,9 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     }
 
     mnemonic result = {0};
+    uint8_t branch = is_branch(parts[0]);
     if (need_operand) {
-        result.operand = get_operand_value(parts[1], labels, label_count);
+        result.operand = get_operand_value(parts[1], labels, label_count, branch);
     }
 
     result.opcode = inst->codes[result.operand.type];
@@ -393,7 +431,7 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         if (nb_parts != 3) {
             ERROR("%s", "equ format : <LABEL> equ <VALUE>\n");
         }
-        operand operand = get_operand_value(parts[2], labels, label_count);
+        operand operand = get_operand_value(parts[2], labels, label_count, 0);
         return (directive) {strdup(parts[0]), {operand.value, operand.type}, CONSTANT};
     }
     if (strstr(line, "org")) {
@@ -403,7 +441,7 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
             ERROR("%s", "ORG format : ORG <ADDR> ($<VALUE>)\n");
         }
 
-        operand operand = get_operand_value(parts[1], labels, label_count);
+        operand operand = get_operand_value(parts[1], labels, label_count, 0);
         if (operand.type == NONE) {
             ERROR("%s", "No operand found\n");
         }
@@ -496,7 +534,7 @@ int load_program(cpu *cpu, const char *file_path) {
     return 1;
 }
 
-void (*instr_func[0xFF]) (cpu *cpu) = {INST_NOP};
+void (*instr_func[0x100]) (cpu *cpu) = {INST_NOP};
 
 void exec_program(cpu *cpu) {
     while (cpu->memory[cpu->pc] != 0x01) {
@@ -522,6 +560,7 @@ int main() {
     instr_func[0xB7] = INST_STA_EXT;
     instr_func[0xD7] = INST_STB_DIR;
     instr_func[0xF7] = INST_STB_EXT;
+    instr_func[0x20] = INST_BRA;
     cpu c = (cpu) {0};
 
     INFO("Loading program");
