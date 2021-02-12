@@ -6,8 +6,16 @@
 #include <assert.h>
 
 #define MAX_MEMORY (1 << 16)
+#define MAX_LABELS 0xFF
 #define FMT8 "0x%02x"
 #define FMT16 "0x%04x"
+
+const char *strdup(const char *base) {
+    size_t len = strlen(base);
+    char *str = calloc(len + 1, sizeof(char));
+    memcpy(str, base, len);
+    return str;
+}
 
 typedef enum {
     IMMEDIATE,
@@ -44,6 +52,7 @@ typedef struct {
 } mnemonic;
 
 typedef struct {
+    const char *label;
     uint16_t operand;
     operand_type operand_type;
     directive_type type;
@@ -345,16 +354,17 @@ directive line_to_directive(char *line) {
         uint8_t nb_parts = split_by_space(line, parts, 3);
         if (nb_parts != 3) {
             printf("equ format : <LABEL> equ <VALUE>\n");
-            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
         }
         uint32_t operand = get_operand_value(parts[2]);
         if (operand > 0xFFFF) {
-            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
         }
-        directive result = {operand, NONE, CONSTANT};
+        directive result = {NULL, operand, NONE, CONSTANT};
         if (parts[2][0] == '#') result.operand_type = IMMEDIATE;
         if (parts[2][0] == '$' && operand <= 0xFF) result.operand_type = DIRECT;
         if (parts[2][0] == '$' && operand >  0xFF) result.operand_type = EXTENDED;
+        result.label = strdup(parts[0]);
         return result;
     }
     if (strstr(line, "org")) {
@@ -362,22 +372,22 @@ directive line_to_directive(char *line) {
         uint8_t nb_parts = split_by_space(line, parts, 2);
         if (nb_parts != 2) {
             printf("ORG format : equ <ADDR> ($<VALUE>)\n");
-            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
         }
         uint32_t operand = get_operand_value(parts[1]);
         if (operand > 0xFFFF) {
-            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
         }
-        directive result = {operand, NONE, ORG};
+        directive result = {NULL, operand, NONE, ORG};
         if (parts[1][0] != '$') {
             printf("ORG format : equ <ADDR> ($<VALUE>)\n");
-            return (directive) {0, NONE, NOT_A_DIRECTIVE};
+            return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
         }
         result.operand_type = EXTENDED;
         return result;
     }
 
-    return (directive) {0, NONE, NOT_A_DIRECTIVE};
+    return (directive) {NULL, 0, NONE, NOT_A_DIRECTIVE};
 }
 
 int str_empty(const char *str) {
@@ -395,6 +405,9 @@ int load_program(cpu *cpu, const char *file_path) {
     }
 
     uint16_t org_program = 0xFFFF;
+    directive labels[MAX_LABELS] = {0};
+    uint8_t label_count = 0;
+
     // first pass
     char buf[100];
     for (;;) {
@@ -416,10 +429,19 @@ int load_program(cpu *cpu, const char *file_path) {
                     printf("WARNING: ORG has already been set\n");
                 }
             }
+            else if (d.type == CONSTANT) {
+                labels[label_count++] = d;
+            }
             printf("Directive operand: %d\n", d.operand);
             // Added this constant to an array
         }
     }
+
+    printf("Loaded %u labels\n", label_count);
+    for (uint8_t i = 0; i < label_count; ++i) {
+        printf("%s : %u\n", labels[i].label, labels[i].operand);
+    }
+
 
     if (org_program == 0xFFFF) {
         printf("ERROR: ORG has not been set!\n");
@@ -427,6 +449,7 @@ int load_program(cpu *cpu, const char *file_path) {
     }
 
     rewind(f);
+
     uint16_t addr = org_program;
     cpu->pc = org_program;
     // second pass
