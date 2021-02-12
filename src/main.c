@@ -295,7 +295,7 @@ operand_type get_operand_type(const char *str, uint16_t value) {
 }
 
 // TODO: Check labels array for operands
-mnemonic line_to_mnemonic(char *line) {
+mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     char *parts[10] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 10);
     if (nb_parts > 2) {
@@ -318,6 +318,18 @@ mnemonic line_to_mnemonic(char *line) {
     mnemonic result = {0};
     if (need_operand) {
         const char *operand_str = parts[1];
+
+        // Checks if the operand is a label
+        for (uint8_t i = 0; i < label_count; ++i) {
+            if (strcmp(parts[1], labels[i].label) == 0) {
+                printf("USING %s : %u\n", labels[i].label, labels[i].operand);
+                result.operand = labels[i].operand;
+                result.operand_type = labels[i].operand_type;
+                result.opcode = inst->codes[inst->operands[result.operand_type]];
+                return result;
+            }
+        }
+
         // Check if operand_str is inside the label array and if so, use the operand of the label
         uint32_t operand_value = get_operand_value(operand_str);
         if (operand_value > 0xFFFF) { // Error while parsing
@@ -470,7 +482,7 @@ int load_program(cpu *cpu, const char *file_path) {
             continue;
         }
         printf("Read %s\n", buf);
-        mnemonic m = line_to_mnemonic(buf);
+        mnemonic m = line_to_mnemonic(buf, labels, label_count);
         addr += add_mnemonic_to_memory(cpu, &m, addr);
     }
     return 1;
