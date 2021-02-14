@@ -74,7 +74,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Interrupts
     - Gestion des ports (PORTx + DDRx)
     - Modification du registre status
-    - Support de plusieurs ORG
 
 - Execution
     - Execution pas à pas

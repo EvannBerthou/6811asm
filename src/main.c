@@ -445,7 +445,6 @@ int load_program(cpu *cpu, const char *file_path) {
         exit(1);
     }
 
-    uint16_t org_program = 0x0;
     directive labels[MAX_LABELS] = {0};
     uint8_t label_count = 0;
 
@@ -464,10 +463,7 @@ int load_program(cpu *cpu, const char *file_path) {
         str_tolower(buf);
         directive d = line_to_directive(buf, labels, label_count);
         if (d.type != NOT_A_DIRECTIVE) {
-            if (d.type == ORG) {
-                org_program = d.operand.value;
-            }
-            else if (d.type == CONSTANT) {
+            if (d.type == CONSTANT) {
                 labels[label_count++] = d;
             }
         }
@@ -479,15 +475,11 @@ int load_program(cpu *cpu, const char *file_path) {
     }
     printf("\n");
 
-    if (org_program == 0xFFFF) {
-        ERROR("%s", "ORG has not been set!\n");
-    }
-
     INFO("First pass done with success");
     rewind(f);
 
-    uint16_t addr = org_program;
-    cpu->pc = org_program;
+    uint16_t addr = 0x0;
+    cpu->pc = addr;
     // second pass
     for (;;) {
         if (fgets(buf, 100, f) == NULL) {
@@ -500,6 +492,13 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         str_tolower(buf);
         if (is_directive(buf)) {
+            directive d = line_to_directive(buf, labels, label_count);
+            if (d.type == ORG) {
+                addr = d.operand.value;
+                if (cpu->pc == 0x0) {
+                    cpu->pc = addr;
+                }
+            }
             continue;
         }
         printf("Read %s\n", buf);
