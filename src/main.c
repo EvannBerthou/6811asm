@@ -445,7 +445,7 @@ int load_program(cpu *cpu, const char *file_path) {
         exit(1);
     }
 
-    uint16_t org_program = 0xFFFF;
+    uint16_t org_program = 0x0;
     directive labels[MAX_LABELS] = {0};
     uint8_t label_count = 0;
 
@@ -465,11 +465,7 @@ int load_program(cpu *cpu, const char *file_path) {
         directive d = line_to_directive(buf, labels, label_count);
         if (d.type != NOT_A_DIRECTIVE) {
             if (d.type == ORG) {
-                if (org_program == 0xFFFF) { // If ORG has already been set
-                    org_program = d.operand.value;
-                } else {
-                    ERROR("%s", "ORG has already been set");
-                }
+                org_program = d.operand.value;
             }
             else if (d.type == CONSTANT) {
                 labels[label_count++] = d;
