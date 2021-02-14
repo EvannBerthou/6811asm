@@ -27,6 +27,7 @@ typedef enum {
     CONSTANT,
     RMB,
     FCC,
+    LABEL,
     NOT_A_DIRECTIVE,
     DIRECTIVE_TYPE_COUNT
 } directive_type;
@@ -41,6 +42,7 @@ typedef struct {
 typedef struct {
     uint16_t value;
     operand_type type;
+    uint8_t from_label;
 } operand;
 
 typedef struct {
@@ -202,6 +204,13 @@ void INST_BRA(cpu *cpu) {
 *           Utils            *
 *****************************/
 
+uint8_t is_str_in_parts(const char *str, char **parts, uint8_t parts_count) {
+    for (uint8_t i = 0; i < parts_count; i++) {
+        if (strcmp(parts[i], str) == 0) return 1;
+    }
+    return 0;
+}
+
 const char *strdup(const char *base) {
     size_t len = strlen(base);
     char *str = calloc(len + 1, sizeof(char));
@@ -275,6 +284,13 @@ uint8_t is_directive(const char *str) {
     return 0;
 }
 
+instruction * opcode_str_to_hex(const char *str);
+
+uint8_t is_instruction(const char *buf) {
+    instruction *inst = opcode_str_to_hex(buf);
+    return inst != NULL;
+}
+
 void str_tolower(char *str) {
     for (uint8_t i = 0; *str != '\0'; ++i, ++str) {
         *str = tolower(*str);
@@ -335,7 +351,7 @@ operand_type get_operand_type(const char *str, uint16_t value) {
 operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
     const directive *directive = get_directive_by_label(str, labels, label_count);
     if (directive != NULL) {
-        return (operand) {directive->operand.value, directive->operand.type};
+        return (operand) {directive->operand.value, directive->operand.type, 1};
     }
 
     // Find where the number starts (skips non digit but keeps hex values)
@@ -352,14 +368,19 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
     if (type == NONE) {
         ERROR("%s `%s` %s", "The operand", str, "is neither a constant or a label");
     }
-    return (operand) {operand_value, type};
+    return (operand) {operand_value, type, 0};
 }
 
-mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
+mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, uint16_t addr) {
     char *parts[3] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 3);
     if (nb_parts > 2) {
         ERROR("`%s` %s", line, "has many operands");
+    }
+
+    const directive *directive = get_directive_by_label(parts[0], labels, label_count);
+    if (directive != NULL && directive->type == LABEL) {
+        return (mnemonic) {0, {0, 0, 0}};
     }
 
     instruction *inst = opcode_str_to_hex(parts[0]);
@@ -376,12 +397,17 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count) {
     if (need_operand) {
         result.operand = get_operand_value(parts[1], labels, label_count);
         if (inst->operands[0] == RELATIVE) {
-            result.operand.type = RELATIVE;
-            if (result.operand.value > 0xFF) {
-                ERROR("Relative addressing mode only supports 8 bits operands ("FMT16">0xFF)",
-                      result.operand.value);
+            uint16_t operand_value = result.operand.value;
+            if (result.operand.from_label) {
+                operand_value = result.operand.value - addr;
+            } else {
+                if (result.operand.value > 0xFF) {
+                    ERROR("Relative addressing mode only supports 8 bits operands ("FMT16">0xFF)",
+                          result.operand.value);
+                }
             }
-            result.operand.value = result.operand.value & 0xFF;
+            result.operand.type = RELATIVE;
+            result.operand.value = operand_value & 0xFF;
         }
         // Checks if the given addressig mode is used by this instruction
         else if (!is_valid_operand_type(inst, result.operand.type)) {
@@ -412,30 +438,36 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
 }
 
 directive line_to_directive(char *line, directive *labels, uint8_t label_count) {
-    if (strstr(line, "equ")) {
-        char *parts[3] = {0};
-        uint8_t nb_parts = split_by_space(line, parts, 3);
+    char *parts[3] = {0};
+    uint8_t nb_parts = split_by_space(line, parts, 3);
+
+    if (is_str_in_parts("equ", parts, nb_parts)) {
         if (nb_parts != 3) {
-            ERROR("%s", "equ format : <LABEL> equ <VALUE>\n");
+            ERROR("%s", "equ format : <LABEL> equ <VALUE>");
         }
         operand operand = get_operand_value(parts[2], labels, label_count);
-        return (directive) {strdup(parts[0]), {operand.value, operand.type}, CONSTANT};
+        return (directive) {strdup(parts[0]), {operand.value, operand.type, operand.from_label}, CONSTANT};
     }
-    if (strstr(line, "org")) {
-        char *parts[2] = {0};
-        uint8_t nb_parts = split_by_space(line, parts, 2);
+    if (is_str_in_parts("org", parts, nb_parts)) {
         if (nb_parts != 2) {
-            ERROR("%s", "ORG format : ORG <ADDR> ($<VALUE>)\n");
+            ERROR("%s", "ORG format : ORG <ADDR> ($<VALUE>)");
         }
 
         operand operand = get_operand_value(parts[1], labels, label_count);
         if (operand.type == NONE) {
             ERROR("%s", "No operand found\n");
         }
-        return (directive) {NULL, {operand.value, EXTENDED}, ORG};
+        return (directive) {NULL, {operand.value, EXTENDED, operand.from_label}, ORG};
     }
 
-    return (directive) {NULL, {0, NONE}, NOT_A_DIRECTIVE};
+    if (!is_instruction(parts[0])) {
+        if (nb_parts != 1) {
+            ERROR("%s", "Label format : <LABEL>");
+        }
+        return (directive) {strdup(parts[0]), {0, EXTENDED, 1}, LABEL};
+    }
+
+    return (directive) {NULL, {0, NONE, 0}, NOT_A_DIRECTIVE};
 }
 
 int load_program(cpu *cpu, const char *file_path) {
@@ -450,6 +482,7 @@ int load_program(cpu *cpu, const char *file_path) {
 
     // first pass
     char buf[100];
+    uint16_t addr = 0x0;
     for (;;) {
         file_line++;
         if (fgets(buf, 100, f) == NULL) {
@@ -462,10 +495,25 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         str_tolower(buf);
         directive d = line_to_directive(buf, labels, label_count);
-        if (d.type != NOT_A_DIRECTIVE) {
-            if (d.type == CONSTANT) {
-                labels[label_count++] = d;
-            }
+        if (d.type == NOT_A_DIRECTIVE) {
+            printf("NOT %s\n", buf);
+            char *parts[5] = {0};
+            split_by_space(buf, parts, 5);
+            instruction *inst = opcode_str_to_hex(parts[0]);
+            if (inst == NULL) { continue; }
+            addr++;
+            uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
+            if (need_operand) addr++;
+            printf("%u\n", addr);
+        }
+        if (d.type == CONSTANT) {
+            labels[label_count++] = d;
+        } else if (d.type == ORG) {
+            addr = d.operand.value;
+        } else if (d.type == LABEL) {
+            printf("Label: %s "FMT16"\n", buf, addr);
+            d.operand.value = addr;
+            labels[label_count++] = d;
         }
     }
 
@@ -477,11 +525,13 @@ int load_program(cpu *cpu, const char *file_path) {
 
     INFO("First pass done with success");
     rewind(f);
+    addr = 0x0;
+    file_line = 0;
 
-    uint16_t addr = 0x0;
     cpu->pc = addr;
     // second pass
     for (;;) {
+        file_line++;
         if (fgets(buf, 100, f) == NULL) {
             break;
         }
@@ -502,7 +552,11 @@ int load_program(cpu *cpu, const char *file_path) {
             continue;
         }
         printf("Read %s\n", buf);
-        mnemonic m = line_to_mnemonic(buf, labels, label_count);
+        mnemonic m = line_to_mnemonic(buf, labels, label_count, addr);
+        if (m.opcode == 0) {
+            printf("0: %s\n", buf);
+            continue;
+        }
         addr += add_mnemonic_to_memory(cpu, &m, addr);
     }
     return 1;
@@ -547,6 +601,6 @@ int main() {
     INFO("Execution program");
     exec_program(&c);
     INFO("Execution ended");
-    print_cpu_state(&c);
+    //print_cpu_state(&c);
 }
 

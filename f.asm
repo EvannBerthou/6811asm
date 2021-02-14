@@ -1,9 +1,9 @@
-START equ $C000
+START equ $0
+A equ #5
 
 org START
-lda #1
+boucle
+lda A
 ldb #1
-aba
-sta $0
-ldb $0
-aba
+bra boucle
+lda A
