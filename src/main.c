@@ -693,6 +693,10 @@ void handle_commands(cpu *cpu) {
             for (int i = 0; i < cpu->label_count; ++i) {
                 printf("    %s: "FMT16"\n", cpu->labels[i].label, cpu->labels[i].operand.value);
             }
+        } else if (strcmp(buf, "ports") == 0) {
+            for (int i = 0; i < MAX_PORTS; ++i) {
+                printf("    PORT%c: "FMT8"\n", 'a' + i, cpu->ports[i]);
+            }
         } else {
             break;
         }
