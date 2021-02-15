@@ -430,6 +430,12 @@ uint8_t split_by_space(char *str, char **out, uint8_t n) {
     return nb_parts;
 }
 
+void set_default_ddr(cpu *cpu) {
+    cpu->memory[DDRA] = 0xF8;
+    cpu->memory[DDRC] = 0xFF;
+    cpu->memory[DDRD] = 0xFF;
+}
+
 /*****************************
 *          Assembly          *
 *****************************/
@@ -746,17 +752,17 @@ int main(int argc, char **argv) {
     instr_func[0x16] = INST_TAB;
     instr_func[0x17] = INST_TBA;
     cpu c = (cpu) {0};
+    set_default_ddr(&c);
 
     INFO("%s", "Loading program");
     if (!load_program(&c, file_name)) {
         return 0;
     }
     INFO("%s", "Loading sucess");
+
     INFO("%s", "Execution program");
     exec_program(&c, step);
     INFO("%s", "Execution ended");
-    printf("Port A: "FMT8"\n", c.ports[PORTA]);
-    printf("Port E: "FMT8"\n", c.ports[PORTE]);
     //print_cpu_state(&c);
 }
 
