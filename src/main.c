@@ -169,6 +169,30 @@ void INST_NOP(cpu *cpu) {
     // DOES NOTHING
 }
 
+uint16_t READ_FROM_PORTS(cpu *cpu, uint16_t addr) {
+    if (addr == PORTA_ADDR) {
+        uint8_t ret = cpu->ports[PORTA] & 0x7;
+        // Or with ret only if third and seventh bit is 0 (input mode)
+        ret |= cpu->ports[PORTA] & (~((cpu->memory[addr] >> 3) & 1) << 3);
+        ret |= cpu->ports[PORTA] & (~((cpu->memory[addr] >> 7) & 1) << 7);
+        return ret;
+    }
+    if (addr == PORTB_ADDR) { // Output only port
+        return 0;
+    }
+    if (addr == PORTC_ADDR) {
+        return cpu->ports[PORTC] & cpu->memory[DDRC];
+    }
+    if (addr == PORTD_ADDR) {
+        return cpu->ports[PORTD] & cpu->memory[DDRD] & 0x70;
+    }
+    if (addr == PORTE_ADDR) { // Input only port
+        return cpu->ports[PORTE];
+    }
+
+    return 0xFFFF;
+}
+
 void INST_LDA_IMM(cpu *cpu) {
     uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
     cpu->a = value;
@@ -183,7 +207,13 @@ void INST_LDA_EXT(cpu *cpu) {
     uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
     uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
     uint16_t addr = (b0 << 8) | b1;
-    cpu->a = cpu->memory[addr];
+
+    uint16_t port_val = READ_FROM_PORTS(cpu, addr);
+    if (port_val < 0xFF) { // < 0xFF means reading from a port
+        cpu->a = port_val;
+    } else {
+        cpu->a = cpu->memory[addr];
+    }
 }
 
 void INST_LDB_IMM(cpu *cpu) {
@@ -200,7 +230,13 @@ void INST_LDB_EXT(cpu *cpu) {
     uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
     uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
     uint16_t addr = (b0 << 8) | b1;
-    cpu->b = cpu->memory[addr];
+
+    uint16_t port_val = READ_FROM_PORTS(cpu, addr);
+    if (port_val < 0xFF) { // < 0xFF means reading from a port
+        cpu->b = port_val;
+    } else {
+        cpu->b = cpu->memory[addr];
+    }
 }
 
 void INST_ABA(cpu *cpu) {
