@@ -106,6 +106,10 @@ typedef struct {
     uint8_t status;
 
     uint8_t memory[MAX_MEMORY];
+
+
+    directive labels[MAX_LABELS];
+    uint8_t label_count;
 } cpu;
 
 const char *file_name = "f.asm";
@@ -479,9 +483,6 @@ int load_program(cpu *cpu, const char *file_path) {
         exit(1);
     }
 
-    directive labels[MAX_LABELS] = {0};
-    uint8_t label_count = 0;
-
     // first pass
     char buf[100];
     uint16_t addr = 0x0;
@@ -496,7 +497,7 @@ int load_program(cpu *cpu, const char *file_path) {
             continue;
         }
         str_tolower(buf);
-        directive d = line_to_directive(buf, labels, label_count);
+        directive d = line_to_directive(buf, cpu->labels, cpu->label_count);
         if (d.type == NOT_A_DIRECTIVE) {
             char *parts[5] = {0};
             split_by_space(buf, parts, 5);
@@ -507,16 +508,16 @@ int load_program(cpu *cpu, const char *file_path) {
             if (need_operand) addr++;
         }
         if (d.type == CONSTANT) {
-            labels[label_count++] = d;
+            cpu->labels[cpu->label_count++] = d;
         } else if (d.type == ORG) {
             addr = d.operand.value;
         } else if (d.type == LABEL) {
             d.operand.value = addr;
-            labels[label_count++] = d;
+            cpu->labels[cpu->label_count++] = d;
         }
     }
 
-    INFO("Loaded %u labels", label_count);
+    INFO("Loaded %u labels", cpu->label_count);
 
     INFO("%s", "First pass done with success");
     rewind(f);
@@ -537,7 +538,7 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         str_tolower(buf);
         if (is_directive(buf)) {
-            directive d = line_to_directive(buf, labels, label_count);
+            directive d = line_to_directive(buf, cpu->labels, cpu->label_count);
             if (d.type == ORG) {
                 addr = d.operand.value;
                 if (cpu->pc == 0x0) {
@@ -546,7 +547,7 @@ int load_program(cpu *cpu, const char *file_path) {
             }
             continue;
         }
-        mnemonic m = line_to_mnemonic(buf, labels, label_count, addr);
+        mnemonic m = line_to_mnemonic(buf, cpu->labels, cpu->label_count, addr);
         if (m.opcode == 0) {
             continue;
         }
@@ -587,8 +588,12 @@ void handle_commands(cpu *cpu) {
             }
             uint16_t range = l & 0xFFFF;
             print_memory_range(cpu, cpu->pc, range);
+        } else if (strcmp(buf, "labels") == 0) {
+            printf("%d labels loaded\n", cpu->label_count);
+            for (int i = 0; i < cpu->label_count; ++i) {
+                printf("    %s: "FMT16"\n", cpu->labels[i].label, cpu->labels[i].operand.value);
+            }
         } else {
-            printf("\nbuff %s\n", buf);
             break;
         }
     }
