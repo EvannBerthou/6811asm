@@ -130,13 +130,11 @@ void INST_NOP(cpu *cpu) {
 
 void INST_LDA_IMM(cpu *cpu) {
     uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
-    printf("Loading " FMT8 " in ACC A\n", value);
     cpu->a = value;
 }
 
 void INST_LDA_DIR(cpu *cpu) {
     uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
-    printf("Loading value at address " FMT8 " (= " FMT8 ") in ACC A\n", addr, cpu->memory[addr]);
     cpu->a = cpu->memory[addr]; // Get value the operand is poiting at
 }
 
@@ -144,19 +142,16 @@ void INST_LDA_EXT(cpu *cpu) {
     uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
     uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
     uint16_t addr = (b0 << 8) | b1;
-    printf("Loading value at address " FMT16 " (= " FMT8 ") in ACC A\n", addr, cpu->memory[addr]);
     cpu->a = cpu->memory[addr];
 }
 
 void INST_LDB_IMM(cpu *cpu) {
     uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
-    printf("Loading " FMT8 " in BCC B\n", value);
     cpu->b = value;
 }
 
 void INST_LDB_DIR(cpu *cpu) {
     uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
-    printf("Loading value at address " FMT8 " (= " FMT8 ") in BCC B\n", addr, cpu->memory[addr]);
     cpu->b = cpu->memory[addr]; // Get value the operand is poiting at
 }
 
@@ -164,7 +159,6 @@ void INST_LDB_EXT(cpu *cpu) {
     uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
     uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
     uint16_t addr = (b0 << 8) | b1;
-    printf("Loading value at address " FMT16 " (= " FMT8 ") in BCC B\n", addr, cpu->memory[addr]);
     cpu->b = cpu->memory[addr];
 }
 
@@ -194,10 +188,8 @@ void INST_STB_EXT(cpu *cpu) {
 }
 
 void INST_BRA(cpu *cpu) {
-    printf("Before jump "FMT8"\n", cpu->pc);
     uint8_t jmp = cpu->memory[++cpu->pc]; // Get value of the next operand
     cpu->pc += (int8_t) jmp;
-    printf("After jump "FMT8"\n", cpu->pc);
 }
 
 /*****************************
@@ -567,13 +559,31 @@ void (*instr_func[0x100]) (cpu *cpu) = {INST_NOP};
 void exec_program(cpu *cpu, int step) {
     while (cpu->memory[cpu->pc] != 0x00) {
         uint8_t inst = cpu->memory[cpu->pc];
-        printf("Executing "FMT8" instruction\n", inst);
+        //printf("Executing "FMT8" instruction\n", inst);
         if (instr_func[inst] != NULL) {
             (*instr_func[inst])(cpu); // Call the function with this opcode
         }
         cpu->pc++;
         if (step) {
-            getchar();
+            printf("Next inst : "FMT8"\n", cpu->memory[cpu->pc]);
+            while (1) {
+                char buf[10] = {0};
+                printf("> ");
+                if (fgets(buf, 10, stdin) == NULL) {
+                    exit(1);
+                }
+                // Removes new line
+                buf[strcspn(buf, "\n")] = '\0';
+                if (strcmp(buf, "ra") == 0) {
+                    printf("Register A: "FMT8"\n", cpu->a);
+                } else if (strcmp(buf, "rb") == 0) {
+                    printf("Register B: "FMT8"\n", cpu->b);
+                } else if (strcmp(buf, "rd") == 0) {
+                    printf("Register D: "FMT16"\n", cpu->d);
+                } else {
+                    break;
+                }
+            }
         }
     }
 }
@@ -586,7 +596,6 @@ int main(int argc, char **argv) {
             step = 1;
         }
     }
-    printf("step %d\n", step);
 
     instr_func[0x86] = INST_LDA_IMM;
     instr_func[0x96] = INST_LDA_DIR;
