@@ -203,47 +203,59 @@ void INST_STA_DIR(cpu *cpu) {
     cpu->memory[addr] = cpu->a;
 }
 
-void INST_STA_EXT(cpu *cpu) {
-    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
-    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
-    uint16_t addr = (hh) << 8 | lh;
-
-    // Check ports
+uint8_t WRITE_TO_PORTS(cpu *cpu, uint16_t addr) {
     if (addr == PORTA_ADDR) { // PORT A
         cpu->ports[PORTA] = cpu->a & cpu->memory[DDRA]; // Only write where bits are in output mode
+        return 1;
     }
     else if (addr == DDRA) { // DDRA
         cpu->memory[addr] = 0x70; // (0x70 == 0111 0000)
         cpu->memory[addr] |= ((cpu->a >> 3) & 1) << 3; // Copy third bit from ACC A to DDRA
         cpu->memory[addr] |= ((cpu->a >> 7) & 1) << 7; // Copy seventh bit from ACC A to DDRA
+        return 1;
     }
     else if (addr == PORTG_ADDR) { // PORT G
         ERROR("%s", "PORT G NOT IMPLETEND");
-    }
-    else if (addr == DDRG) { // DDRG
+        return 1;
+    } else if (addr == DDRG) { // DDRG
         ERROR("%s", "DDRG NOT IMPLETEND");
+        return 1;
     }
     else if (addr == PORTB_ADDR) { // PORT B Full output mode
         cpu->ports[PORTB] = cpu->a;
+        return 1;
     }
     else if (addr == PORTF_ADDR) { // PORT F
         ERROR("%s", "PORT F NOT IMPLETEND");
+        return 1;
     }
     else if (addr == PORTC_ADDR) { // PORT C
         cpu->ports[PORTC] = cpu->a & cpu->memory[DDRC]; // Only write where bits are in output mode
+        return 1;
     }
     else if (addr == DDRC) { // DDRC
         cpu->memory[addr] = cpu->a;
+        return 1;
     }
     else if (addr == PORTD_ADDR) { // PORT D (6 bits pin)
         cpu->ports[PORTD] = cpu->a & cpu->memory[DDRD]; // Only write where bits are in output mode
+        return 1;
     }
     else if (addr == DDRD) { // DDRD
         cpu->memory[addr] = cpu->a & 0x3F; // Only keep the first 6 bits (3F = 0011 1111)
+        return 1;
     }
     else if (addr == PORTE_ADDR) { // PORT E
     }
-    else {
+    return 0;
+}
+
+void INST_STA_EXT(cpu *cpu) {
+    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
+    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
+    uint16_t addr = (hh) << 8 | lh;
+
+    if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->a;
     }
 }
@@ -254,8 +266,12 @@ void INST_STB_DIR(cpu *cpu) {
 }
 
 void INST_STB_EXT(cpu *cpu) {
-    uint16_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
-    cpu->memory[addr] = cpu->b;
+    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
+    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
+    uint16_t addr = (hh) << 8 | lh;
+    if (!WRITE_TO_PORTS(cpu, addr)) {
+        cpu->memory[addr] = cpu->b;
+    }
 }
 
 void INST_BRA(cpu *cpu) {
