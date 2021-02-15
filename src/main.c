@@ -564,7 +564,7 @@ int load_program(cpu *cpu, const char *file_path) {
 
 void (*instr_func[0x100]) (cpu *cpu) = {INST_NOP};
 
-void exec_program(cpu *cpu) {
+void exec_program(cpu *cpu, int step) {
     while (cpu->memory[cpu->pc] != 0x00) {
         uint8_t inst = cpu->memory[cpu->pc];
         printf("Executing "FMT8" instruction\n", inst);
@@ -572,11 +572,22 @@ void exec_program(cpu *cpu) {
             (*instr_func[inst])(cpu); // Call the function with this opcode
         }
         cpu->pc++;
+        if (step) {
+            getchar();
+        }
     }
 }
 
 
-int main() {
+int main(int argc, char **argv) {
+    int step = 0;
+    for (int i = 0; i < argc; ++i) {
+        if (strcmp(argv[i], "step") == 0) {
+            step = 1;
+        }
+    }
+    printf("step %d\n", step);
+
     instr_func[0x86] = INST_LDA_IMM;
     instr_func[0x96] = INST_LDA_DIR;
     instr_func[0xB6] = INST_LDA_EXT;
@@ -599,7 +610,7 @@ int main() {
     print_cpu_state(&c);
 
     INFO("Execution program");
-    exec_program(&c);
+    exec_program(&c, step);
     INFO("Execution ended");
     //print_cpu_state(&c);
 }
