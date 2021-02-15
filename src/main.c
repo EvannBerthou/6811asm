@@ -112,6 +112,16 @@ instruction instructions[] = {
         .codes = {[RELATIVE]=0x20},
         .operands = { RELATIVE }
     },
+    {
+        .names = {"tab"}, .name_count = 1,
+        .codes = {[INHERENT]=0x16},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"tba"}, .name_count = 1,
+        .codes = {[INHERENT]=0x17},
+        .operands = { INHERENT }
+    },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
@@ -279,6 +289,14 @@ void INST_BRA(cpu *cpu) {
     cpu->pc += (int8_t) jmp;
 }
 
+void INST_TAB(cpu *cpu) {
+    cpu->b = cpu->a;
+}
+
+void INST_TBA(cpu *cpu) {
+    cpu->a = cpu->b;
+}
+
 /*****************************
 *           Utils            *
 *****************************/
@@ -287,7 +305,6 @@ uint8_t str_prefix(const char *str, const char *pre)
 {
     return strncmp(pre, str, strlen(pre)) == 0;
 }
-
 
 uint8_t is_str_in_parts(const char *str, char **parts, uint8_t parts_count) {
     for (uint8_t i = 0; i < parts_count; i++) {
@@ -684,16 +701,20 @@ void handle_commands(cpu *cpu) {
 
 void exec_program(cpu *cpu, int step) {
     while (cpu->memory[cpu->pc] != 0x00) {
+        if (step) {
+            printf("Next inst : "FMT8"\n", cpu->memory[cpu->pc]);
+            handle_commands(cpu);
+        }
         uint8_t inst = cpu->memory[cpu->pc];
         //printf("Executing "FMT8" instruction\n", inst);
         if (instr_func[inst] != NULL) {
             (*instr_func[inst])(cpu); // Call the function with this opcode
         }
         cpu->pc++;
-        if (step) {
-            printf("Next inst : "FMT8"\n", cpu->memory[cpu->pc]);
-            handle_commands(cpu);
-        }
+    }
+    if (step) {
+        printf("Execution ended, you can still see last values\n");
+        handle_commands(cpu);
     }
 }
 
@@ -718,6 +739,8 @@ int main(int argc, char **argv) {
     instr_func[0xD7] = INST_STB_DIR;
     instr_func[0xF7] = INST_STB_EXT;
     instr_func[0x20] = INST_BRA;
+    instr_func[0x16] = INST_TAB;
+    instr_func[0x17] = INST_TBA;
     cpu c = (cpu) {0};
 
     INFO("%s", "Loading program");
