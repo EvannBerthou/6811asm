@@ -7,6 +7,7 @@
 
 #define MAX_MEMORY (1 << 16)
 #define MAX_LABELS 0xFF
+#define MAX_PORTS 5
 #define FMT8 "0x%02x"
 #define FMT16 "0x%04x"
 
@@ -31,6 +32,30 @@ typedef enum {
     NOT_A_DIRECTIVE,
     DIRECTIVE_TYPE_COUNT
 } directive_type;
+
+typedef enum {
+    PORTA,
+    PORTB,
+    PORTC,
+    PORTD,
+    PORTE,
+    PORTF,
+    PORTG
+} ports;
+
+typedef enum {
+    PORTA_ADDR = 0x1000,
+    DDRA = 0x1001,
+    PORTG_ADDR = 0x1002,
+    DDRG = 0x1003,
+    PORTB_ADDR = 0x1004,
+    PORTF_ADDR = 0x1005,
+    PORTC_ADDR = 0x1006,
+    DDRC = 0x1007,
+    PORTD_ADDR = 0x1008,
+    DDRD = 0x1009,
+    PORTE_ADDR = 0x100a,
+} ports_addr;
 
 typedef struct {
     char *names[2]; // Some instructions have aliases like lda = ldaa
@@ -107,6 +132,8 @@ typedef struct {
 
     uint8_t memory[MAX_MEMORY];
 
+    uint8_t ports[MAX_PORTS];
+    uint8_t ddrx[MAX_PORTS];
 
     directive labels[MAX_LABELS];
     uint8_t label_count;
@@ -177,8 +204,48 @@ void INST_STA_DIR(cpu *cpu) {
 }
 
 void INST_STA_EXT(cpu *cpu) {
-    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
-    cpu->memory[addr] = cpu->a;
+    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
+    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
+    uint16_t addr = (hh) << 8 | lh;
+
+    // Check ports
+    if (addr == PORTA_ADDR) { // PORT A
+        cpu->ports[PORTA] = cpu->a & cpu->memory[DDRA]; // Only write where bits are in output mode
+    }
+    else if (addr == DDRA) { // DDRA
+        cpu->memory[addr] = 0x70; // (0x70 == 0111 0000)
+        cpu->memory[addr] |= ((cpu->a >> 3) & 1) << 3; // Copy third bit from ACC A to DDRA
+        cpu->memory[addr] |= ((cpu->a >> 7) & 1) << 7; // Copy seventh bit from ACC A to DDRA
+    }
+    else if (addr == PORTG_ADDR) { // PORT G
+        ERROR("%s", "PORT G NOT IMPLETEND");
+    }
+    else if (addr == DDRG) { // DDRG
+        ERROR("%s", "DDRG NOT IMPLETEND");
+    }
+    else if (addr == PORTB_ADDR) { // PORT B Full output mode
+        cpu->ports[PORTB] = cpu->a;
+    }
+    else if (addr == PORTF_ADDR) { // PORT F
+        ERROR("%s", "PORT F NOT IMPLETEND");
+    }
+    else if (addr == PORTC_ADDR) { // PORT C
+        cpu->ports[PORTC] = cpu->a & cpu->memory[DDRC]; // Only write where bits are in output mode
+    }
+    else if (addr == DDRC) { // DDRC
+        cpu->memory[addr] = cpu->a;
+    }
+    else if (addr == PORTD_ADDR) { // PORT D (6 bits pin)
+        cpu->ports[PORTD] = cpu->a & cpu->memory[DDRD]; // Only write where bits are in output mode
+    }
+    else if (addr == DDRD) { // DDRD
+        cpu->memory[addr] = cpu->a & 0x3F; // Only keep the first 6 bits (3F = 0011 1111)
+    }
+    else if (addr == PORTE_ADDR) { // PORT E
+    }
+    else {
+        cpu->memory[addr] = cpu->a;
+    }
 }
 
 void INST_STB_DIR(cpu *cpu) {
@@ -187,7 +254,7 @@ void INST_STB_DIR(cpu *cpu) {
 }
 
 void INST_STB_EXT(cpu *cpu) {
-    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    uint16_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
     cpu->memory[addr] = cpu->b;
 }
 
@@ -645,6 +712,8 @@ int main(int argc, char **argv) {
     INFO("%s", "Execution program");
     exec_program(&c, step);
     INFO("%s", "Execution ended");
+    printf("Port A: "FMT8"\n", c.ports[PORTA]);
+    printf("Port E: "FMT8"\n", c.ports[PORTE]);
     //print_cpu_state(&c);
 }
 

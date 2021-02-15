@@ -68,15 +68,11 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
 
 ## TODO
 - Assembleur
-    - Support des labels pour les branches
     - Ajout des ports
     - Implémentation de toutes les instructions
     - Interrupts
     - Gestion des ports (PORTx + DDRx)
     - Modification du registre status
-
-- Execution
-    - Execution pas à pas
 
 - Tests
     - Programme de tests afin de tester le programme de tous les côtés
