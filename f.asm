@@ -1,4 +1,4 @@
-START equ $0
+START equ $c000
 A equ #5
 
 org START

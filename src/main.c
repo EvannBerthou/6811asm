@@ -116,7 +116,7 @@ uint32_t file_line = 0;
     exit(1); \
 } while (0)
 
-#define INFO(f_) printf("[INFO] "f_"\n")
+#define INFO(f_, ...) printf("[INFO] "f_"\n", __VA_ARGS__)
 
 
 /*****************************
@@ -196,6 +196,12 @@ void INST_BRA(cpu *cpu) {
 *           Utils            *
 *****************************/
 
+uint8_t str_prefix(const char *str, const char *pre)
+{
+    return strncmp(pre, str, strlen(pre)) == 0;
+}
+
+
 uint8_t is_str_in_parts(const char *str, char **parts, uint8_t parts_count) {
     for (uint8_t i = 0; i < parts_count; i++) {
         if (strcmp(parts[i], str) == 0) return 1;
@@ -233,8 +239,12 @@ int str_empty(const char *str) {
 }
 
 void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
-    for (uint16_t i = 0; i < len; ++i) {
-        printf("%04x: %02x\n", i, cpu->memory[from + i]);
+    for (uint16_t i = from; i < from + len; ++i) {
+        printf("%04x: %02x\n", i, cpu->memory[i]);
+        if (i + 1 == 0xFFFF) {
+            printf("Outside of memory range\n");
+            return;
+        }
     }
 }
 
@@ -488,7 +498,6 @@ int load_program(cpu *cpu, const char *file_path) {
         str_tolower(buf);
         directive d = line_to_directive(buf, labels, label_count);
         if (d.type == NOT_A_DIRECTIVE) {
-            printf("NOT %s\n", buf);
             char *parts[5] = {0};
             split_by_space(buf, parts, 5);
             instruction *inst = opcode_str_to_hex(parts[0]);
@@ -496,26 +505,20 @@ int load_program(cpu *cpu, const char *file_path) {
             addr++;
             uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
             if (need_operand) addr++;
-            printf("%u\n", addr);
         }
         if (d.type == CONSTANT) {
             labels[label_count++] = d;
         } else if (d.type == ORG) {
             addr = d.operand.value;
         } else if (d.type == LABEL) {
-            printf("Label: %s "FMT16"\n", buf, addr);
             d.operand.value = addr;
             labels[label_count++] = d;
         }
     }
 
-    printf("Loaded %u labels\n", label_count);
-    for (uint8_t i = 0; i < label_count; ++i) {
-        printf("%s : %u\n", labels[i].label, labels[i].operand.value);
-    }
-    printf("\n");
+    INFO("Loaded %u labels", label_count);
 
-    INFO("First pass done with success");
+    INFO("%s", "First pass done with success");
     rewind(f);
     addr = 0x0;
     file_line = 0;
@@ -543,10 +546,8 @@ int load_program(cpu *cpu, const char *file_path) {
             }
             continue;
         }
-        printf("Read %s\n", buf);
         mnemonic m = line_to_mnemonic(buf, labels, label_count, addr);
         if (m.opcode == 0) {
-            printf("0: %s\n", buf);
             continue;
         }
         addr += add_mnemonic_to_memory(cpu, &m, addr);
@@ -555,6 +556,43 @@ int load_program(cpu *cpu, const char *file_path) {
 }
 
 void (*instr_func[0x100]) (cpu *cpu) = {INST_NOP};
+
+void handle_commands(cpu *cpu) {
+    while (1) {
+        char buf[20] = {0};
+        printf("> ");
+        if (fgets(buf, 20, stdin) == NULL) {
+            exit(1);
+        }
+        // Removes new line
+        buf[strcspn(buf, "\n")] = '\0';
+
+        if (strcmp(buf, "ra") == 0) {
+            printf("Register A: "FMT8"\n", cpu->a);
+        } else if (strcmp(buf, "rb") == 0) {
+            printf("Register B: "FMT8"\n", cpu->b);
+        } else if (strcmp(buf, "rd") == 0) {
+            printf("Register D: "FMT16"\n", cpu->d);
+        } else if (str_prefix(buf, "next")) {
+            const char *arg = buf + strlen("next");
+            char *end;
+            long l = strtol(arg, &end, 0);
+            if (l == 0 && arg == end) {
+                printf("Invalid argument\n");
+                continue;
+            }
+            if (l > 0xFFFF) {
+                printf("Argument is too big\n");
+                continue;
+            }
+            uint16_t range = l & 0xFFFF;
+            print_memory_range(cpu, cpu->pc, range);
+        } else {
+            printf("\nbuff %s\n", buf);
+            break;
+        }
+    }
+}
 
 void exec_program(cpu *cpu, int step) {
     while (cpu->memory[cpu->pc] != 0x00) {
@@ -566,24 +604,7 @@ void exec_program(cpu *cpu, int step) {
         cpu->pc++;
         if (step) {
             printf("Next inst : "FMT8"\n", cpu->memory[cpu->pc]);
-            while (1) {
-                char buf[10] = {0};
-                printf("> ");
-                if (fgets(buf, 10, stdin) == NULL) {
-                    exit(1);
-                }
-                // Removes new line
-                buf[strcspn(buf, "\n")] = '\0';
-                if (strcmp(buf, "ra") == 0) {
-                    printf("Register A: "FMT8"\n", cpu->a);
-                } else if (strcmp(buf, "rb") == 0) {
-                    printf("Register B: "FMT8"\n", cpu->b);
-                } else if (strcmp(buf, "rd") == 0) {
-                    printf("Register D: "FMT16"\n", cpu->d);
-                } else {
-                    break;
-                }
-            }
+            handle_commands(cpu);
         }
     }
 }
@@ -611,16 +632,14 @@ int main(int argc, char **argv) {
     instr_func[0x20] = INST_BRA;
     cpu c = (cpu) {0};
 
-    INFO("Loading program");
+    INFO("%s", "Loading program");
     if (!load_program(&c, file_name)) {
         return 0;
     }
-    INFO("Loading sucess");
-    print_cpu_state(&c);
-
-    INFO("Execution program");
+    INFO("%s", "Loading sucess");
+    INFO("%s", "Execution program");
     exec_program(&c, step);
-    INFO("Execution ended");
+    INFO("%s", "Execution ended");
     //print_cpu_state(&c);
 }
 
