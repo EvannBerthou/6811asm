@@ -207,7 +207,11 @@ instruction instructions[] = {
         .codes = {[RELATIVE]=0x29},
         .operands = { RELATIVE }
     },
-
+    {
+        .names = {"sec"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x0D},
+        .operands = { RELATIVE }
+    },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
@@ -283,6 +287,25 @@ uint8_t EXT_WORD(cpu *cpu) {
 void INST_NOP(cpu *cpu) {
     (void) cpu;
     // DOES NOTHING
+}
+
+void INST_CLV(cpu *cpu) {
+    cpu->v = 0;
+}
+void INST_SEV(cpu *cpu) {
+    cpu->v = 1;
+}
+void INST_CLC(cpu *cpu) {
+    cpu->c = 0;
+}
+void INST_SEC(cpu *cpu) {
+    cpu->c = 1;
+}
+void INST_CLI(cpu *cpu) {
+    cpu->i = 0;
+}
+void INST_SEI(cpu *cpu) {
+    cpu->i = 1;
 }
 
 uint16_t READ_FROM_PORTS(cpu *cpu, uint16_t addr) {
@@ -628,6 +651,10 @@ void INST_CMPB_EXT(cpu *cpu) {
     uint8_t b = cpu->b;
     uint8_t v = EXT_WORD(cpu);
     SET_CMP_FLAGS(cpu, b, v);
+}
+
+void INST_SEC(cpu *cpu) {
+    cpu->c = 1;
 }
 
 /*****************************
@@ -1125,6 +1152,13 @@ int main(int argc, char **argv) {
     instr_func[0x21] = INST_BRN;
     instr_func[0x28] = INST_BVC;
     instr_func[0x29] = INST_BVS;
+
+    instr_func[0x0A] = INST_CLV;
+    instr_func[0x0B] = INST_SEV;
+    instr_func[0x0C] = INST_CLC;
+    instr_func[0x0D] = INST_SEC;
+    instr_func[0x0E] = INST_CLI;
+    instr_func[0x0F] = INST_SEI;
 
     cpu c = (cpu) {0};
     set_default_ddr(&c);
