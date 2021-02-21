@@ -4,5 +4,5 @@ DDRA  equ $1001
 PORTB equ $1004
 
 org START
-lda #80
-cmpa #1
+ldb #80
+cmpb #1

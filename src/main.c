@@ -124,8 +124,13 @@ instruction instructions[] = {
     },
     {
         .names = {"cmpa"}, .name_count = 1,
-        .codes = {[IMMEDIATE]=0x81},
-        .operands = { IMMEDIATE }
+        .codes = {[IMMEDIATE]=0x81, [DIRECT]=0x91, [EXTENDED]=0xB1},
+        .operands = { IMMEDIATE, DIRECT, EXTENDED }
+    },
+    {
+        .names = {"cmpb"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xC1, [DIRECT]=0xD1, [EXTENDED]=0xE1},
+        .operands = { IMMEDIATE, DIRECT, EXTENDED }
     },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
@@ -350,9 +355,7 @@ void INST_TBA(cpu *cpu) {
     cpu->a = cpu->b;
 }
 
-void INST_CMPA_IMM(cpu *cpu) {
-    uint8_t a = cpu->a;
-    uint8_t v = cpu->memory[++cpu->pc];
+void SET_CMP_FLAGS(cpu *cpu, uint8_t a, uint8_t v) {
     int16_t r = a - v;
     // Copy most significant bit (MSB) is in fourth position == Negative status flag
     cpu->n = (r >> 7) & 1;
@@ -362,6 +365,50 @@ void INST_CMPA_IMM(cpu *cpu) {
     cpu->v = (r >= 127 || r <= -128);
     // Sets carry flag
     cpu->c = (a < v);
+}
+
+void INST_CMPA_IMM(cpu *cpu) {
+    uint8_t a = cpu->a;
+    uint8_t v = cpu->memory[++cpu->pc];
+    SET_CMP_FLAGS(cpu, a, v);
+}
+
+void INST_CMPA_DIR(cpu *cpu) {
+    uint8_t a = cpu->a;
+    uint8_t addr = cpu->memory[++cpu->pc];
+    uint8_t v = cpu->memory[addr];
+    SET_CMP_FLAGS(cpu, a, v);
+}
+
+void INST_CMPA_EXT(cpu *cpu) {
+    uint8_t a = cpu->a;
+    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
+    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
+    uint16_t addr = (hh) << 8 | lh;
+    uint8_t v = cpu->memory[addr];
+    SET_CMP_FLAGS(cpu, a, v);
+}
+
+void INST_CMPB_IMM(cpu *cpu) {
+    uint8_t b = cpu->b;
+    uint8_t v = cpu->memory[++cpu->pc];
+    SET_CMP_FLAGS(cpu, b, v);
+}
+
+void INST_CMPB_DIR(cpu *cpu) {
+    uint8_t b = cpu->b;
+    uint8_t addr = cpu->memory[++cpu->pc];
+    uint8_t v = cpu->memory[addr];
+    SET_CMP_FLAGS(cpu, b, v);
+}
+
+void INST_CMPB_EXT(cpu *cpu) {
+    uint8_t b = cpu->b;
+    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
+    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
+    uint16_t addr = (hh) << 8 | lh;
+    uint8_t v = cpu->memory[addr];
+    SET_CMP_FLAGS(cpu, b, v);
 }
 
 /*****************************
@@ -838,6 +885,11 @@ int main(int argc, char **argv) {
     instr_func[0x16] = INST_TAB;
     instr_func[0x17] = INST_TBA;
     instr_func[0x81] = INST_CMPA_IMM;
+    instr_func[0x91] = INST_CMPA_DIR;
+    instr_func[0xB1] = INST_CMPA_EXT;
+    instr_func[0xC1] = INST_CMPB_IMM;
+    instr_func[0xD1] = INST_CMPB_DIR;
+    instr_func[0xF1] = INST_CMPB_EXT;
     cpu c = (cpu) {0};
     set_default_ddr(&c);
 
