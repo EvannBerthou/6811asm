@@ -108,11 +108,6 @@ instruction instructions[] = {
         .operands = { INHERENT }
     },
     {
-        .names = {"bra"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x20},
-        .operands = { RELATIVE }
-    },
-    {
         .names = {"tab"}, .name_count = 1,
         .codes = {[INHERENT]=0x16},
         .operands = { INHERENT }
@@ -132,6 +127,87 @@ instruction instructions[] = {
         .codes = {[IMMEDIATE]=0xC1, [DIRECT]=0xD1, [EXTENDED]=0xE1},
         .operands = { IMMEDIATE, DIRECT, EXTENDED }
     },
+    {
+        .names = {"bcc", "bhs"}, .name_count = 2,
+        .codes = {[RELATIVE]=0x24},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bcs", "blo"}, .name_count = 2,
+        .codes = {[RELATIVE]=0x25},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"beq"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x27},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bge"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2C},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bgt"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2E},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bhi"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x22},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"ble"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2F},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bls"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x23},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"blt"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2D},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bmi"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2B},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bne"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x26},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bpl"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2A},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bra"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x20},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"brn"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x21},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bvc"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x28},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bvs"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x29},
+        .operands = { RELATIVE }
+    },
+
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
@@ -352,6 +428,109 @@ void INST_STB_EXT(cpu *cpu) {
 void INST_BRA(cpu *cpu) {
     uint8_t jmp = cpu->memory[++cpu->pc];
     cpu->pc += (int8_t) jmp;
+}
+
+void INST_BCC(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->c == 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BCS(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->c == 1) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BEQ(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->z == 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BGE(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if ((cpu->n ^ cpu->v) == 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BGT(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->z + (cpu->n ^ cpu->v) == 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BHI(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->c + cpu->z == 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BLE(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->z + (cpu->n ^ cpu->c) != 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BLS(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->c + cpu->z != 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BLT(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->n + cpu->v != 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BMI(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->n == 1) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BNE(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->z == 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BPL(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->n == 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BRN(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    (void) jmp;
+}
+
+void INST_BVC(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->v == 0) {
+        cpu->pc += (int8_t) jmp;
+    }
+}
+
+void INST_BVS(cpu *cpu) {
+    uint8_t jmp = cpu->memory[++cpu->pc];
+    if (cpu->v == 1) {
+        cpu->pc += (int8_t) jmp;
+    }
 }
 
 void INST_TAB(cpu *cpu) {
@@ -880,7 +1059,6 @@ int main(int argc, char **argv) {
     instr_func[0xB7] = INST_STA_EXT;
     instr_func[0xD7] = INST_STB_DIR;
     instr_func[0xF7] = INST_STB_EXT;
-    instr_func[0x20] = INST_BRA;
     instr_func[0x16] = INST_TAB;
     instr_func[0x17] = INST_TBA;
     instr_func[0x81] = INST_CMPA_IMM;
@@ -889,6 +1067,24 @@ int main(int argc, char **argv) {
     instr_func[0xC1] = INST_CMPB_IMM;
     instr_func[0xD1] = INST_CMPB_DIR;
     instr_func[0xF1] = INST_CMPB_EXT;
+
+    instr_func[0x24] = INST_BCC;
+    instr_func[0x25] = INST_BCS;
+    instr_func[0x27] = INST_BEQ;
+    instr_func[0x2C] = INST_BGE;
+    instr_func[0x2E] = INST_BGT;
+    instr_func[0x22] = INST_BHI;
+    instr_func[0x2F] = INST_BLE;
+    instr_func[0x23] = INST_BLS;
+    instr_func[0x2D] = INST_BLT;
+    instr_func[0x2B] = INST_BMI;
+    instr_func[0x26] = INST_BNE;
+    instr_func[0x2A] = INST_BPL;
+    instr_func[0x20] = INST_BRA;
+    instr_func[0x21] = INST_BRN;
+    instr_func[0x28] = INST_BVC;
+    instr_func[0x29] = INST_BVS;
+
     cpu c = (cpu) {0};
     set_default_ddr(&c);
 

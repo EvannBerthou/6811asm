@@ -73,6 +73,7 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Interrupts
     - Subroutines
     - Modification du registre status
+        - Fait pour CMP
     - Ajout du index x,y addressing mode
     - Branches conditionnelles
     - Support des opcode en 2 mots
