@@ -66,14 +66,96 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
 ## TODO
 - Assembleur
     - Directives restantes
+        - RMB
+        - FCC
+        - FCB
+        - FDB
+        - FILL
     - Implémentation de toutes les instructions
+        - ABX
+        - ABY
+        - ADC
+        - ADD
+        - ADDD
+        - AND
+        - ASL
+        - ASLD
+        - ASR
+        - BCLR
+        - BIT
+        - BRCLR
+        - BRSET
+        - BSET
+        - BSR
+        - CBA
+        - CLR
+        - CLV
+        - COM
+        - CPD
+        - CPX
+        - CPY
+        - DAA
+        - DEC
+        - DES
+        - DEX
+        - DEY
+        - EOR
+        - FDIV
+        - IDIV
+        - INC
+        - INS
+        - INX
+        - INY
+        - JMP
+        - JSR
+        - LDD
+        - LDS
+        - LDX
+        - LDY
+        - LSL
+        - LSLD
+        - LSR
+        - LSRD
+        - MUL
+        - NEG
+        - ORA
+        - PSH
+        - PSHX
+        - PSHY
+        - PUL
+        - PULX
+        - PULY
+        - ROL
+        - ROR
+        - RTI
+        - RTS
+        - SBA
+        - SBC
+        - STD
+        - STOP
+        - STS
+        - STX
+        - STY
+        - SUB
+        - SUBD
+        - SWI
+        - TAP
+        - TEST
+        - TPA
+        - TST
+        - TSX
+        - TSY
+        - TXS
+        - TYS
+        - WAI
+        - XGDX
+        - XGDY
     - Interrupts
     - Subroutines
-    - half carry
-    - Modification du registre status
-        - Fait pour CMP
+    - Half carry
     - Ajout du index x,y addressing mode
     - Support des opcode en 2 mots
+    - Support des opcodes avec 2 operands (ex: bclr)
     - Pouvoir changer la valeur des ports d'entrée
     - Changer la structure d'une ligne pour être sous la forme:
         [LABEL] opcode [operand] [; commentaire]
