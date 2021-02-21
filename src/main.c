@@ -143,7 +143,19 @@ typedef struct {
     };
     uint16_t sp;
     uint16_t pc;
-    uint8_t status;
+    union {
+        struct {
+            uint8_t s : 1;
+            uint8_t x : 1;
+            uint8_t h : 1;
+            uint8_t i : 1;
+            uint8_t n : 1;
+            uint8_t z : 1;
+            uint8_t v : 1;
+            uint8_t c : 1;
+        };
+        uint8_t status;
+    };
 
     uint8_t memory[MAX_MEMORY];
 
@@ -342,15 +354,14 @@ void INST_CMPA_IMM(cpu *cpu) {
     uint8_t a = cpu->a;
     uint8_t v = cpu->memory[++cpu->pc];
     int16_t r = a - v;
-    cpu->status &= 0xF0; // Clears 4 lowers bits
     // Copy most significant bit (MSB) is in fourth position == Negative status flag
-    cpu->status |= ((r >> 7) & 1) << 4;
+    cpu->n = (r >> 7) & 1;
     // Sets zero status flag
-    cpu->status |= (r == 0) << 5;
+    cpu->z = (r == 0);
     // Sets overflow flag
-    cpu->status |= (r >= 127 || r <= -128) << 6;
+    cpu->v = (r >= 127 || r <= -128);
     // Sets carry flag
-    cpu->status |= (a < v) << 7;
+    cpu->c = (a < v);
 }
 
 /*****************************
