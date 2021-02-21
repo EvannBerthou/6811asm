@@ -186,6 +186,24 @@ uint32_t file_line = 0;
 *        Instructions        *
 *****************************/
 
+uint8_t DIR_WORD(cpu *cpu) {
+    // Get value of the next operand
+    uint8_t addr = cpu->memory[++cpu->pc];
+    // Get value the operand is poiting at
+    return cpu->memory[addr];
+}
+
+uint16_t NEXT_16(cpu *cpu) {
+    uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
+    uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
+    uint16_t joined = (b0 << 8) | b1;
+    return joined;
+}
+
+uint8_t EXT_WORD(cpu *cpu) {
+    return cpu->memory[NEXT_16(cpu)];
+}
+
 void INST_NOP(cpu *cpu) {
     (void) cpu;
     // DOES NOTHING
@@ -216,20 +234,17 @@ uint16_t READ_FROM_PORTS(cpu *cpu, uint16_t addr) {
 }
 
 void INST_LDA_IMM(cpu *cpu) {
-    uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
+    // Operand is a constant, just load the next byte in memory
+    uint8_t value = cpu->memory[++cpu->pc];
     cpu->a = value;
 }
 
 void INST_LDA_DIR(cpu *cpu) {
-    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
-    cpu->a = cpu->memory[addr]; // Get value the operand is poiting at
+    cpu->a = DIR_WORD(cpu);
 }
 
 void INST_LDA_EXT(cpu *cpu) {
-    uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
-    uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
-    uint16_t addr = (b0 << 8) | b1;
-
+    uint16_t addr = NEXT_16(cpu);
     uint16_t port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->a = port_val;
@@ -239,20 +254,17 @@ void INST_LDA_EXT(cpu *cpu) {
 }
 
 void INST_LDB_IMM(cpu *cpu) {
-    uint8_t value = cpu->memory[++cpu->pc]; // Operand is a constant, just load the next byte in memory
+    // Operand is a constant, just load the next byte in memory
+    uint8_t value = cpu->memory[++cpu->pc];
     cpu->b = value;
 }
 
 void INST_LDB_DIR(cpu *cpu) {
-    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
-    cpu->b = cpu->memory[addr]; // Get value the operand is poiting at
+    cpu->b = DIR_WORD(cpu);
 }
 
 void INST_LDB_EXT(cpu *cpu) {
-    uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
-    uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
-    uint16_t addr = (b0 << 8) | b1;
-
+    uint16_t addr = NEXT_16(cpu);
     uint16_t port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->b = port_val;
@@ -267,7 +279,7 @@ void INST_ABA(cpu *cpu) {
 }
 
 void INST_STA_DIR(cpu *cpu) {
-    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    uint8_t addr = cpu->memory[++cpu->pc];
     cpu->memory[addr] = cpu->a;
 }
 
@@ -319,31 +331,26 @@ uint8_t WRITE_TO_PORTS(cpu *cpu, uint16_t addr) {
 }
 
 void INST_STA_EXT(cpu *cpu) {
-    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
-    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
-    uint16_t addr = (hh) << 8 | lh;
-
+    uint16_t addr = NEXT_16(cpu);
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->a;
     }
 }
 
 void INST_STB_DIR(cpu *cpu) {
-    uint8_t addr = cpu->memory[++cpu->pc]; // Get value of the next operand
+    uint8_t addr = cpu->memory[++cpu->pc];
     cpu->memory[addr] = cpu->b;
 }
 
 void INST_STB_EXT(cpu *cpu) {
-    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
-    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
-    uint16_t addr = (hh) << 8 | lh;
+    uint16_t addr = NEXT_16(cpu);
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->b;
     }
 }
 
 void INST_BRA(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc]; // Get value of the next operand
+    uint8_t jmp = cpu->memory[++cpu->pc];
     cpu->pc += (int8_t) jmp;
 }
 
@@ -375,17 +382,13 @@ void INST_CMPA_IMM(cpu *cpu) {
 
 void INST_CMPA_DIR(cpu *cpu) {
     uint8_t a = cpu->a;
-    uint8_t addr = cpu->memory[++cpu->pc];
-    uint8_t v = cpu->memory[addr];
+    uint8_t v = DIR_WORD(cpu);
     SET_CMP_FLAGS(cpu, a, v);
 }
 
 void INST_CMPA_EXT(cpu *cpu) {
     uint8_t a = cpu->a;
-    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
-    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
-    uint16_t addr = (hh) << 8 | lh;
-    uint8_t v = cpu->memory[addr];
+    uint8_t v = EXT_WORD(cpu);
     SET_CMP_FLAGS(cpu, a, v);
 }
 
@@ -397,17 +400,13 @@ void INST_CMPB_IMM(cpu *cpu) {
 
 void INST_CMPB_DIR(cpu *cpu) {
     uint8_t b = cpu->b;
-    uint8_t addr = cpu->memory[++cpu->pc];
-    uint8_t v = cpu->memory[addr];
+    uint8_t v = DIR_WORD(cpu);
     SET_CMP_FLAGS(cpu, b, v);
 }
 
 void INST_CMPB_EXT(cpu *cpu) {
     uint8_t b = cpu->b;
-    uint8_t hh = cpu->memory[++cpu->pc]; // high order bits
-    uint8_t lh = cpu->memory[++cpu->pc]; // low order bits
-    uint16_t addr = (hh) << 8 | lh;
-    uint8_t v = cpu->memory[addr];
+    uint8_t v = EXT_WORD(cpu);
     SET_CMP_FLAGS(cpu, b, v);
 }
 
