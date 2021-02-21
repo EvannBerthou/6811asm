@@ -76,7 +76,8 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Ajout du index x,y addressing mode
     - Commentaires
     - Branches conditionnelles
-    - Support des opcode enn 2 mots
+    - Support des opcode en 2 mots
+    - Pouvoir changer la valeur des ports d'entrée
     - Changer la structure d'une ligne pour être sous la forme:
         [LABEL] opcode [operand] [; commentaire]
 

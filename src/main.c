@@ -445,6 +445,9 @@ uint8_t split_by_space(char *str, char **out, uint8_t n) {
     uint8_t nb_parts = 0;
     uint8_t state = 0;
     while (*str) {
+        if (*str == ';' || *str == '*' ||(*str == '/' && *(str + 1) == '/')) { // If start of a comment
+            return nb_parts;
+        }
         if (*str == ' ' || *str == '\n' || *str == '\t' || *str == '\r') {
             if (state == 1) {
                 *str = '\0';
@@ -522,6 +525,9 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
 mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, uint16_t addr) {
     char *parts[3] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 3);
+    if (nb_parts == 0) {
+        return (mnemonic) {0, {0, 0, 0}};
+    }
     if (nb_parts > 2) {
         ERROR("`%s` %s", line, "has many operands");
     }
@@ -588,6 +594,10 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
 directive line_to_directive(char *line, directive *labels, uint8_t label_count) {
     char *parts[3] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 3);
+    if (nb_parts == 0) {
+        return (directive) {NULL, {0, NONE, 0}, NOT_A_DIRECTIVE};
+    }
+
 
     if (is_str_in_parts("equ", parts, nb_parts)) {
         if (nb_parts != 3) {
@@ -642,9 +652,12 @@ int load_program(cpu *cpu, const char *file_path) {
         directive d = line_to_directive(buf, cpu->labels, cpu->label_count);
         if (d.type == NOT_A_DIRECTIVE) {
             char *parts[5] = {0};
-            split_by_space(buf, parts, 5);
+            uint8_t nb_parts = split_by_space(buf, parts, 5);
+            if (nb_parts == 0) { continue; }
+
             instruction *inst = opcode_str_to_hex(parts[0]);
             if (inst == NULL) { continue; }
+
             addr++;
             uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
             if (need_operand) addr++;
