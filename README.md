@@ -74,6 +74,11 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Subroutines
     - Modification du registre status
     - Ajout du index x,y addressing mode
+    - Commentaires
+    - Branches conditionnelles
+    - Support des opcode enn 2 mots
+    - Changer la structure d'une ligne pour être sous la forme:
+        [LABEL] opcode [operand] [; commentaire]
 
 - Tests
     - Programme de tests afin de tester le programme de tous les côtés
