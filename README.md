@@ -42,10 +42,7 @@ Une instruction est composée d'un opcode et optionnellement d'un operand.
 Il existe différent type d'operand :
 
 - Immediate (**#**) : définie une constante.
-Exemple : lda #0 -> charge la valeur 0 dans le registre A. La taille maximum de l'operand dépend de la taille du registre (acc a : 8 bits, acc x : 16 bits).
-- Extended (**$**) Utilise 2 bytes afin de pointer vers une adresse mémoire qui contient l'operand.
-- Direct (**$**) : Récupère uniquement le byte inférieurs (0x00 est assumé pour le byte supérieur) afin d'accéder à la zero-page(ou direct page) de la mémoire (0x00 - 0xFF). Permet d'utiliser un byte de moins de mémoire ce qui réduit d'un cycle l'accès.
-- Indexed (indx, indy) :
+Exemple : lda #0 -> charge la valeur 0 dans le registre A. La taille maximum de l'operand dépend de la taille du registre (acc a : 8 bits, acc x : 16 bits).  - Extended (**$**) Utilise 2 bytes afin de pointer vers une adresse mémoire qui contient l'operand.  - Direct (**$**) : Récupère uniquement le byte inférieurs (0x00 est assumé pour le byte supérieur) afin d'accéder à la zero-page(ou direct page) de la mémoire (0x00 - 0xFF). Permet d'utiliser un byte de moins de mémoire ce qui réduit d'un cycle l'accès.  - Indexed (indx, indy) :
 - Inherent : L'operand est déjà connu par le cpu, c'est par exemple le cas de l'instruction LDA, qui pointe déjà vers l'accumulateur A.
 r
 - Relative : Est uniquement utilisé par les instructions de branches. Est 1 seul byte signe (--127 à +127) et définie une distance relative vers laquelle le programme doit aller. Par exemple un **BRA** $10 avance de 0x10 instructions. Si l'operand est 0x00, alors le saut on ne saute pas et on passe à la prochaine instruction.
@@ -72,10 +69,10 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Implémentation de toutes les instructions
     - Interrupts
     - Subroutines
+    - half carry
     - Modification du registre status
         - Fait pour CMP
     - Ajout du index x,y addressing mode
-    - Branches conditionnelles
     - Support des opcode en 2 mots
     - Pouvoir changer la valeur des ports d'entrée
     - Changer la structure d'une ligne pour être sous la forme:

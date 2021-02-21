@@ -309,14 +309,23 @@ uint16_t READ_FROM_PORTS(cpu *cpu, uint16_t addr) {
     return 0xFFFF;
 }
 
+void SET_LD_FLAGS(cpu *cpu, uint8_t result) {
+    cpu->n = (result >> 7) & 1;
+    cpu->z = result == 0;
+    cpu->v = 0;
+}
+
 void INST_LDA_IMM(cpu *cpu) {
     // Operand is a constant, just load the next byte in memory
     uint8_t value = cpu->memory[++cpu->pc];
     cpu->a = value;
+    SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDA_DIR(cpu *cpu) {
-    cpu->a = DIR_WORD(cpu);
+    uint8_t value = DIR_WORD(cpu);
+    cpu->a = value;
+    SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDA_EXT(cpu *cpu) {
@@ -324,8 +333,11 @@ void INST_LDA_EXT(cpu *cpu) {
     uint16_t port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->a = port_val;
+        SET_LD_FLAGS(cpu, port_val);
     } else {
-        cpu->a = cpu->memory[addr];
+        uint8_t value = cpu->memory[addr];
+        cpu->a = value;
+        SET_LD_FLAGS(cpu, value);
     }
 }
 
@@ -333,10 +345,13 @@ void INST_LDB_IMM(cpu *cpu) {
     // Operand is a constant, just load the next byte in memory
     uint8_t value = cpu->memory[++cpu->pc];
     cpu->b = value;
+    SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDB_DIR(cpu *cpu) {
-    cpu->b = DIR_WORD(cpu);
+    uint8_t value = DIR_WORD(cpu);
+    cpu->b = value;
+    SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDB_EXT(cpu *cpu) {
@@ -344,19 +359,30 @@ void INST_LDB_EXT(cpu *cpu) {
     uint16_t port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->b = port_val;
+        SET_LD_FLAGS(cpu, port_val);
     } else {
-        cpu->b = cpu->memory[addr];
+        uint8_t value = cpu->memory[addr];
+        cpu->b = value;
+        SET_LD_FLAGS(cpu, value);
     }
 }
 
 void INST_ABA(cpu *cpu) {
-    uint8_t result = (cpu->a + cpu->b) & 0xFF;
-    cpu->a = result;
+    int16_t result = cpu->a + cpu->b;
+    cpu->a = result & 0xFF;
+    cpu->h = 0; // TODO
+    cpu->n = (result >> 7) & 1;
+    cpu->z = (result == 0);
+    cpu->v = (result >= 127 || result <= -128);
+    cpu->c = (result > 0xFF);
 }
 
 void INST_STA_DIR(cpu *cpu) {
     uint8_t addr = cpu->memory[++cpu->pc];
     cpu->memory[addr] = cpu->a;
+    cpu->n = (cpu->a >> 7) & 1;
+    cpu->z = cpu->a == 0;
+    cpu->v = 0;
 }
 
 uint8_t WRITE_TO_PORTS(cpu *cpu, uint16_t addr) {
@@ -411,11 +437,17 @@ void INST_STA_EXT(cpu *cpu) {
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->a;
     }
+    cpu->n = (cpu->a >> 7) & 1;
+    cpu->z = cpu->a == 0;
+    cpu->v = 0;
 }
 
 void INST_STB_DIR(cpu *cpu) {
     uint8_t addr = cpu->memory[++cpu->pc];
     cpu->memory[addr] = cpu->b;
+    cpu->n = (cpu->a >> 7) & 1;
+    cpu->z = cpu->a == 0;
+    cpu->v = 0;
 }
 
 void INST_STB_EXT(cpu *cpu) {
@@ -423,6 +455,9 @@ void INST_STB_EXT(cpu *cpu) {
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->b;
     }
+    cpu->n = (cpu->a >> 7) & 1;
+    cpu->z = cpu->a == 0;
+    cpu->v = 0;
 }
 
 void INST_BRA(cpu *cpu) {
@@ -535,10 +570,16 @@ void INST_BVS(cpu *cpu) {
 
 void INST_TAB(cpu *cpu) {
     cpu->b = cpu->a;
+    cpu->n = (cpu->b >> 7) & 1;
+    cpu->z = cpu->b == 0;
+    cpu->v = 0;
 }
 
 void INST_TBA(cpu *cpu) {
     cpu->a = cpu->b;
+    cpu->n = (cpu->a >> 7) & 1;
+    cpu->z = cpu->a == 0;
+    cpu->v = 0;
 }
 
 void SET_CMP_FLAGS(cpu *cpu, uint8_t a, uint8_t v) {
