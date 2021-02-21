@@ -122,6 +122,11 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x17},
         .operands = { INHERENT }
     },
+    {
+        .names = {"cmpa"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x81},
+        .operands = { IMMEDIATE }
+    },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
@@ -331,6 +336,21 @@ void INST_TAB(cpu *cpu) {
 
 void INST_TBA(cpu *cpu) {
     cpu->a = cpu->b;
+}
+
+void INST_CMPA_IMM(cpu *cpu) {
+    uint8_t a = cpu->a;
+    uint8_t v = cpu->memory[++cpu->pc];
+    int16_t r = a - v;
+    cpu->status &= 0xF0; // Clears 4 lowers bits
+    // Copy most significant bit (MSB) is in fourth position == Negative status flag
+    cpu->status |= ((r >> 7) & 1) << 4;
+    // Sets zero status flag
+    cpu->status |= (r == 0) << 5;
+    // Sets overflow flag
+    cpu->status |= (r >= 127 || r <= -128) << 6;
+    // Sets carry flag
+    cpu->status |= (a < v) << 7;
 }
 
 /*****************************
@@ -743,6 +763,12 @@ void handle_commands(cpu *cpu) {
             }
             uint16_t range = l & 0xFFFF;
             print_memory_range(cpu, cpu->pc, range);
+        } else if (strcmp(buf, "status") == 0) {
+            printf("Status : ");
+            for (int i = 0; i < 8; ++i) {
+                printf("%d", cpu->status >> i & 0x1);
+            }
+            printf("\n");
         } else if (strcmp(buf, "labels") == 0) {
             printf("%d labels loaded\n", cpu->label_count);
             for (int i = 0; i < cpu->label_count; ++i) {
@@ -800,6 +826,7 @@ int main(int argc, char **argv) {
     instr_func[0x20] = INST_BRA;
     instr_func[0x16] = INST_TAB;
     instr_func[0x17] = INST_TBA;
+    instr_func[0x81] = INST_CMPA_IMM;
     cpu c = (cpu) {0};
     set_default_ddr(&c);
 

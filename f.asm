@@ -1,11 +1,8 @@
 START equ $c000
 PORTA equ $1000
 DDRA  equ $1001
-PORTB equ $1004 ; PORT B
-* test
-// test
+PORTB equ $1004
 
 org START
-ldb #FF
-stb PORTB
-ldb PORTB
+lda #80
+cmpa #1

@@ -74,7 +74,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Subroutines
     - Modification du registre status
     - Ajout du index x,y addressing mode
-    - Commentaires
     - Branches conditionnelles
     - Support des opcode en 2 mots
     - Pouvoir changer la valeur des ports d'entrée
