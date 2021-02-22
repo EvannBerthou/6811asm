@@ -58,13 +58,6 @@ typedef enum {
 } ports_addr;
 
 typedef struct {
-    char *names[2]; // Some instructions have aliases like lda = ldaa
-    uint8_t name_count;
-    uint8_t codes[OPERAND_TYPE_COUNT];
-    operand_type operands[OPERAND_TYPE_COUNT];
-} instruction;
-
-typedef struct {
     uint16_t value;
     operand_type type;
     uint8_t from_label;
@@ -80,165 +73,6 @@ typedef struct {
     operand operand;
     directive_type type;
 } directive;
-
-instruction instructions[] = {
-    {
-        .names = {"ldaa", "lda"}, .name_count = 2,
-        .codes = {[IMMEDIATE]=0x86, [DIRECT]=0x96, [EXTENDED]=0xB6},
-        .operands = { IMMEDIATE, EXTENDED, DIRECT }
-    },
-    {
-        .names = {"ldab", "ldb"}, .name_count = 2,
-        .codes = {[IMMEDIATE]=0xC6, [DIRECT]=0xD6, [EXTENDED]=0xF6},
-        .operands = { IMMEDIATE, EXTENDED, DIRECT }
-    },
-    {
-        .names = {"staa", "sta"}, .name_count = 2,
-        .codes = {[DIRECT]=0x97, [EXTENDED]=0xB7},
-        .operands = { DIRECT, EXTENDED }
-    },
-    {
-        .names = {"stab", "stb"}, .name_count = 2,
-        .codes = {[DIRECT]=0xD7, [EXTENDED]=0xF7},
-        .operands = { DIRECT, EXTENDED }
-    },
-    {
-        .names = {"aba"}, .name_count = 1,
-        .codes = {[INHERENT]=0x1B},
-        .operands = { INHERENT }
-    },
-    {
-        .names = {"tab"}, .name_count = 1,
-        .codes = {[INHERENT]=0x16},
-        .operands = { INHERENT }
-    },
-    {
-        .names = {"tba"}, .name_count = 1,
-        .codes = {[INHERENT]=0x17},
-        .operands = { INHERENT }
-    },
-    {
-        .names = {"cmpa"}, .name_count = 1,
-        .codes = {[IMMEDIATE]=0x81, [DIRECT]=0x91, [EXTENDED]=0xB1},
-        .operands = { IMMEDIATE, DIRECT, EXTENDED }
-    },
-    {
-        .names = {"cmpb"}, .name_count = 1,
-        .codes = {[IMMEDIATE]=0xC1, [DIRECT]=0xD1, [EXTENDED]=0xE1},
-        .operands = { IMMEDIATE, DIRECT, EXTENDED }
-    },
-    {
-        .names = {"bcc", "bhs"}, .name_count = 2,
-        .codes = {[RELATIVE]=0x24},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bcs", "blo"}, .name_count = 2,
-        .codes = {[RELATIVE]=0x25},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"beq"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x27},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bge"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x2C},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bgt"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x2E},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bhi"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x22},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"ble"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x2F},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bls"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x23},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"blt"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x2D},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bmi"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x2B},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bne"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x26},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bpl"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x2A},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bra"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x20},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"brn"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x21},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bvc"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x28},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"bvs"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x29},
-        .operands = { RELATIVE }
-    },
-    {
-        .names = {"clv"}, .name_count = 1,
-        .codes = {[NONE]=0x0A},
-        .operands = { NONE }
-    },
-    {
-        .names = {"sev"}, .name_count = 1,
-        .codes = {[NONE]=0x0B},
-        .operands = { NONE }
-    },
-    {
-        .names = {"clc"}, .name_count = 1,
-        .codes = {[NONE]=0x0C},
-        .operands = { NONE }
-    },
-    {
-        .names = {"sec"}, .name_count = 1,
-        .codes = {[NONE]=0x0D},
-        .operands = { NONE }
-    },
-    {
-        .names = {"cli"}, .name_count = 1,
-        .codes = {[NONE]=0x0E},
-        .operands = { NONE }
-    },
-    {
-        .names = {"sei"}, .name_count = 1,
-        .codes = {[NONE]=0x0F},
-        .operands = { NONE }
-    },
-};
-#define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
 const char *directives_name[] = { "org", "equ" };
 #define DIRECTIVE_COUNT ((uint8_t)(sizeof(directives_name) / sizeof(directives_name[0])))
@@ -276,6 +110,15 @@ typedef struct {
     uint8_t label_count;
 } cpu;
 
+typedef struct {
+    char *names[2]; // Some instructions have aliases like lda = ldaa
+    uint8_t name_count;
+    uint8_t codes[OPERAND_TYPE_COUNT];
+    void (*func[OPERAND_TYPE_COUNT]) (cpu *cpu);
+    operand_type operands[OPERAND_TYPE_COUNT];
+} instruction;
+
+
 const char *file_name = "f.asm";
 uint32_t file_line = 0;
 
@@ -286,6 +129,7 @@ uint32_t file_line = 0;
 
 #define INFO(f_, ...) printf("[INFO] "f_"\n", __VA_ARGS__)
 
+void (*instr_func[0x100]) (cpu *cpu) = {0};
 
 /*****************************
 *        Instructions        *
@@ -678,9 +522,234 @@ void INST_CMPB_EXT(cpu *cpu) {
     SET_CMP_FLAGS(cpu, b, v);
 }
 
+instruction instructions[] = {
+    {
+        .names = {"ldaa", "lda"}, .name_count = 2,
+        .codes = {[IMMEDIATE]=0x86, [DIRECT]=0x96, [EXTENDED]=0xB6},
+        .func =  {
+            [IMMEDIATE]=INST_LDA_IMM,
+            [DIRECT]=INST_LDA_DIR,
+            [EXTENDED]=INST_LDA_EXT,
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+    },
+    {
+        .names = {"ldab", "ldb"}, .name_count = 2,
+        .codes = {[IMMEDIATE]=0xC6, [DIRECT]=0xD6, [EXTENDED]=0xF6},
+        .func =  {
+            [IMMEDIATE]=INST_LDB_IMM,
+            [DIRECT]=INST_LDB_DIR,
+            [EXTENDED]=INST_LDB_EXT,
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+    },
+    {
+        .names = {"staa", "sta"}, .name_count = 2,
+        .codes = {[DIRECT]=0x97, [EXTENDED]=0xB7},
+        .func = {
+            [DIRECT]=INST_STA_DIR,
+            [EXTENDED]=INST_STA_EXT,
+        },
+        .operands = { DIRECT, EXTENDED }
+    },
+    {
+        .names = {"stab", "stb"}, .name_count = 2,
+        .codes = {[DIRECT]=0xD7, [EXTENDED]=0xF7},
+        .func = {
+            [DIRECT]=INST_STB_DIR,
+            [EXTENDED]=INST_STB_EXT,
+        },
+        .operands = { DIRECT, EXTENDED }
+    },
+    {
+        .names = {"aba"}, .name_count = 1,
+        .codes = {[INHERENT]=0x1B},
+        .func = {[INHERENT]=INST_ABA},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"tab"}, .name_count = 1,
+        .codes = {[INHERENT]=0x16},
+        .func = {[INHERENT]=INST_TAB},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"tba"}, .name_count = 1,
+        .codes = {[INHERENT]=0x17},
+        .func = {[INHERENT]=INST_TBA},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"cmpa"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x81, [DIRECT]=0x91, [EXTENDED]=0xB1},
+        .func =  {
+            [IMMEDIATE]=INST_CMPA_IMM,
+            [DIRECT]=INST_CMPA_DIR,
+            [EXTENDED]=INST_CMPA_EXT,
+        },
+        .operands = { IMMEDIATE, DIRECT, EXTENDED }
+    },
+    {
+        .names = {"cmpb"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xC1, [DIRECT]=0xD1, [EXTENDED]=0xE1},
+        .func =  {
+            [IMMEDIATE]=INST_CMPB_IMM,
+            [DIRECT]=INST_CMPB_DIR,
+            [EXTENDED]=INST_CMPB_EXT,
+        },
+        .operands = { IMMEDIATE, DIRECT, EXTENDED }
+    },
+    {
+        .names = {"bcc", "bhs"}, .name_count = 2,
+        .codes = {[RELATIVE]=0x24},
+        .func = {[RELATIVE]=INST_BCC},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bcs", "blo"}, .name_count = 2,
+        .codes = {[RELATIVE]=0x25},
+        .func = {[RELATIVE]=INST_BCS},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"beq"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x27},
+        .func = {[RELATIVE]=INST_BEQ},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bge"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2C},
+        .func = {[RELATIVE]=INST_BGE},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bgt"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2E},
+        .func = {[RELATIVE]=INST_BGT},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bhi"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x22},
+        .func = {[RELATIVE]=INST_BHI},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"ble"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2F},
+        .func = {[RELATIVE]=INST_BLE},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bls"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x23},
+        .func = {[RELATIVE]=INST_BLS},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"blt"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2D},
+        .func = {[RELATIVE]=INST_BLT},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bmi"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2B},
+        .func = {[RELATIVE]=INST_BMI},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bne"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x26},
+        .func = {[RELATIVE]=INST_BNE},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bpl"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x2A},
+        .func = {[RELATIVE]=INST_BPL},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bra"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x20},
+        .func = {[RELATIVE]=INST_BRA},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"brn"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x21},
+        .func = {[RELATIVE]=INST_BRN},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bvc"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x28},
+        .func = {[RELATIVE]=INST_BVC},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bvs"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x29},
+        .func = {[RELATIVE]=INST_BVS},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"clv"}, .name_count = 1,
+        .codes = {[NONE]=0x0A},
+        .func = {[NONE]=INST_CLV},
+        .operands = { NONE }
+    },
+    {
+        .names = {"sev"}, .name_count = 1,
+        .codes = {[NONE]=0x0B},
+        .func = {[NONE]=INST_SEV},
+        .operands = { NONE }
+    },
+    {
+        .names = {"clc"}, .name_count = 1,
+        .codes = {[NONE]=0x0C},
+        .func = {[NONE]=INST_CLC},
+        .operands = { NONE }
+    },
+    {
+        .names = {"sec"}, .name_count = 1,
+        .codes = {[NONE]=0x0D},
+        .func = {[NONE]=INST_SEC},
+        .operands = { NONE }
+    },
+    {
+        .names = {"cli"}, .name_count = 1,
+        .codes = {[NONE]=0x0E},
+        .func = {[NONE]=INST_CLI},
+        .operands = { NONE }
+    },
+    {
+        .names = {"sei"}, .name_count = 1,
+        .codes = {[NONE]=0x0F},
+        .func = {[NONE]=INST_SEI},
+        .operands = { NONE }
+    },
+};
+#define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
+
+
 /*****************************
 *           Utils            *
 *****************************/
+
+void add_instructions_func() {
+    memset(instr_func, 0, 0x100 * sizeof(void*));
+    for (uint8_t i = 0; i < INSTRUCTION_COUNT; ++i) {
+        instruction *inst = &instructions[i];
+        operand_type *type = inst->operands;
+        while (*type != NONE) {
+            instr_func[inst->codes[*type]] = inst->func[*type];
+            type++;
+        }
+    }
+}
 
 uint8_t str_prefix(const char *str, const char *pre)
 {
@@ -1056,7 +1125,6 @@ int load_program(cpu *cpu, const char *file_path) {
     return 1;
 }
 
-void (*instr_func[0x100]) (cpu *cpu) = {INST_NOP};
 
 void handle_commands(cpu *cpu) {
     while (1) {
@@ -1137,49 +1205,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    instr_func[0x86] = INST_LDA_IMM;
-    instr_func[0x96] = INST_LDA_DIR;
-    instr_func[0xB6] = INST_LDA_EXT;
-    instr_func[0xC6] = INST_LDB_IMM;
-    instr_func[0xD6] = INST_LDB_DIR;
-    instr_func[0xF6] = INST_LDB_EXT;
-    instr_func[0x1B] = INST_ABA;
-    instr_func[0x97] = INST_STA_DIR;
-    instr_func[0xB7] = INST_STA_EXT;
-    instr_func[0xD7] = INST_STB_DIR;
-    instr_func[0xF7] = INST_STB_EXT;
-    instr_func[0x16] = INST_TAB;
-    instr_func[0x17] = INST_TBA;
-    instr_func[0x81] = INST_CMPA_IMM;
-    instr_func[0x91] = INST_CMPA_DIR;
-    instr_func[0xB1] = INST_CMPA_EXT;
-    instr_func[0xC1] = INST_CMPB_IMM;
-    instr_func[0xD1] = INST_CMPB_DIR;
-    instr_func[0xF1] = INST_CMPB_EXT;
-
-    instr_func[0x24] = INST_BCC;
-    instr_func[0x25] = INST_BCS;
-    instr_func[0x27] = INST_BEQ;
-    instr_func[0x2C] = INST_BGE;
-    instr_func[0x2E] = INST_BGT;
-    instr_func[0x22] = INST_BHI;
-    instr_func[0x2F] = INST_BLE;
-    instr_func[0x23] = INST_BLS;
-    instr_func[0x2D] = INST_BLT;
-    instr_func[0x2B] = INST_BMI;
-    instr_func[0x26] = INST_BNE;
-    instr_func[0x2A] = INST_BPL;
-    instr_func[0x20] = INST_BRA;
-    instr_func[0x21] = INST_BRN;
-    instr_func[0x28] = INST_BVC;
-    instr_func[0x29] = INST_BVS;
-
-    instr_func[0x0A] = INST_CLV;
-    instr_func[0x0B] = INST_SEV;
-    instr_func[0x0C] = INST_CLC;
-    instr_func[0x0D] = INST_SEC;
-    instr_func[0x0E] = INST_CLI;
-    instr_func[0x0F] = INST_SEI;
+    add_instructions_func();
 
     cpu c = (cpu) {0};
     set_default_ddr(&c);

@@ -1,0 +1,206 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_EXCMD	mixed	/number, pattern, mixed, or combineV2/
+!_TAG_OUTPUT_FILESEP	slash	/slash or backslash/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PATTERN_LENGTH_LIMIT	96	/0 for no limit/
+!_TAG_PROC_CWD	/home/evann/Programming/C/6811/	//
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	5.9.0	/p5.9.20210110.0/
+%.o	Makefile	/^%.o: %.c$/;"	t
+CC	Makefile	/^CC=gcc$/;"	m
+CFLAGS	Makefile	/^CFLAGS=-Wall -Werror -Wextra -ggdb -pedantic-errors -std=c11$/;"	m
+CONSTANT	src/main.c	/^    CONSTANT,$/;"	e	enum:__anon6a96e1720203	file:
+DDRA	f.asm	/^DDRA  equ $1001$/;"	d
+DDRA	src/main.c	/^    DDRA = 0x1001,$/;"	e	enum:__anon6a96e1720403	file:
+DDRC	src/main.c	/^    DDRC = 0x1007,$/;"	e	enum:__anon6a96e1720403	file:
+DDRD	src/main.c	/^    DDRD = 0x1009,$/;"	e	enum:__anon6a96e1720403	file:
+DDRG	src/main.c	/^    DDRG = 0x1003,$/;"	e	enum:__anon6a96e1720403	file:
+DIRECT	src/main.c	/^    DIRECT,$/;"	e	enum:__anon6a96e1720103	file:
+DIRECTIVE_COUNT	src/main.c	/^#define DIRECTIVE_COUNT /;"	d	file:
+DIRECTIVE_TYPE_COUNT	src/main.c	/^    DIRECTIVE_TYPE_COUNT$/;"	e	enum:__anon6a96e1720203	file:
+DIR_WORD	src/main.c	/^uint8_t DIR_WORD(cpu *cpu) {$/;"	f	typeref:typename:uint8_t
+Directives	README.md	/^### Directives$/;"	S	section:Emulateur 6811""Fonctionnement
+ERROR	src/main.c	/^#define ERROR(/;"	d	file:
+EXTENDED	src/main.c	/^    EXTENDED,$/;"	e	enum:__anon6a96e1720103	file:
+EXT_WORD	src/main.c	/^uint8_t EXT_WORD(cpu *cpu) {$/;"	f	typeref:typename:uint8_t
+Emulateur 6811	README.md	/^# Emulateur 6811$/;"	c
+FCC	src/main.c	/^    FCC,$/;"	e	enum:__anon6a96e1720203	file:
+FMT16	src/main.c	/^#define FMT16 /;"	d	file:
+FMT8	src/main.c	/^#define FMT8 /;"	d	file:
+Fonctionnement	README.md	/^## Fonctionnement$/;"	s	chapter:Emulateur 6811
+IMMEDIATE	src/main.c	/^    IMMEDIATE,$/;"	e	enum:__anon6a96e1720103	file:
+INDEXDED_X	src/main.c	/^    INDEXDED_X,$/;"	e	enum:__anon6a96e1720103	file:
+INDEXDED_Y	src/main.c	/^    INDEXDED_Y,$/;"	e	enum:__anon6a96e1720103	file:
+INFO	src/main.c	/^#define INFO(/;"	d	file:
+INHERENT	src/main.c	/^    INHERENT,$/;"	e	enum:__anon6a96e1720103	file:
+INSTRUCTION_COUNT	src/main.c	/^#define INSTRUCTION_COUNT /;"	d	file:
+INST_ABA	src/main.c	/^void INST_ABA(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BCC	src/main.c	/^void INST_BCC(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BCS	src/main.c	/^void INST_BCS(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BEQ	src/main.c	/^void INST_BEQ(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BGE	src/main.c	/^void INST_BGE(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BGT	src/main.c	/^void INST_BGT(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BHI	src/main.c	/^void INST_BHI(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BLE	src/main.c	/^void INST_BLE(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BLS	src/main.c	/^void INST_BLS(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BLT	src/main.c	/^void INST_BLT(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BMI	src/main.c	/^void INST_BMI(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BNE	src/main.c	/^void INST_BNE(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BPL	src/main.c	/^void INST_BPL(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BRA	src/main.c	/^void INST_BRA(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BRN	src/main.c	/^void INST_BRN(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BVC	src/main.c	/^void INST_BVC(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_BVS	src/main.c	/^void INST_BVS(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CLC	src/main.c	/^void INST_CLC(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CLI	src/main.c	/^void INST_CLI(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CLV	src/main.c	/^void INST_CLV(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CMPA_DIR	src/main.c	/^void INST_CMPA_DIR(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CMPA_EXT	src/main.c	/^void INST_CMPA_EXT(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CMPA_IMM	src/main.c	/^void INST_CMPA_IMM(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CMPB_DIR	src/main.c	/^void INST_CMPB_DIR(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CMPB_EXT	src/main.c	/^void INST_CMPB_EXT(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_CMPB_IMM	src/main.c	/^void INST_CMPB_IMM(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_LDA_DIR	src/main.c	/^void INST_LDA_DIR(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_LDA_EXT	src/main.c	/^void INST_LDA_EXT(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_LDA_IMM	src/main.c	/^void INST_LDA_IMM(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_LDB_DIR	src/main.c	/^void INST_LDB_DIR(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_LDB_EXT	src/main.c	/^void INST_LDB_EXT(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_LDB_IMM	src/main.c	/^void INST_LDB_IMM(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_NOP	src/main.c	/^void INST_NOP(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_SEC	src/main.c	/^void INST_SEC(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_SEI	src/main.c	/^void INST_SEI(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_SEV	src/main.c	/^void INST_SEV(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_STA_DIR	src/main.c	/^void INST_STA_DIR(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_STA_EXT	src/main.c	/^void INST_STA_EXT(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_STB_DIR	src/main.c	/^void INST_STB_DIR(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_STB_EXT	src/main.c	/^void INST_STB_EXT(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_TAB	src/main.c	/^void INST_TAB(cpu *cpu) {$/;"	f	typeref:typename:void
+INST_TBA	src/main.c	/^void INST_TBA(cpu *cpu) {$/;"	f	typeref:typename:void
+Instructions	README.md	/^### Instructions$/;"	S	section:Emulateur 6811""Fonctionnement
+LABEL	src/main.c	/^    LABEL,$/;"	e	enum:__anon6a96e1720203	file:
+MAX_LABELS	src/main.c	/^#define MAX_LABELS /;"	d	file:
+MAX_MEMORY	src/main.c	/^#define MAX_MEMORY /;"	d	file:
+MAX_PORTS	src/main.c	/^#define MAX_PORTS /;"	d	file:
+Memory map:	README.md	/^### Memory map:$/;"	S	section:Emulateur 6811""Fonctionnement
+NEXT_16	src/main.c	/^uint16_t NEXT_16(cpu *cpu) {$/;"	f	typeref:typename:uint16_t
+NONE	src/main.c	/^    NONE,$/;"	e	enum:__anon6a96e1720103	file:
+NOT_A_DIRECTIVE	src/main.c	/^    NOT_A_DIRECTIVE,$/;"	e	enum:__anon6a96e1720203	file:
+OBJ	Makefile	/^OBJ=$(SRC:.c=.o)$/;"	m
+OPERAND_TYPE_COUNT	src/main.c	/^    OPERAND_TYPE_COUNT$/;"	e	enum:__anon6a96e1720103	file:
+ORG	src/main.c	/^    ORG,$/;"	e	enum:__anon6a96e1720203	file:
+PORTA	f.asm	/^PORTA equ $1000$/;"	d
+PORTA	src/main.c	/^    PORTA,$/;"	e	enum:__anon6a96e1720303	file:
+PORTA_ADDR	src/main.c	/^    PORTA_ADDR = 0x1000,$/;"	e	enum:__anon6a96e1720403	file:
+PORTB	f.asm	/^PORTB equ $1004$/;"	d
+PORTB	src/main.c	/^    PORTB,$/;"	e	enum:__anon6a96e1720303	file:
+PORTB_ADDR	src/main.c	/^    PORTB_ADDR = 0x1004,$/;"	e	enum:__anon6a96e1720403	file:
+PORTC	src/main.c	/^    PORTC,$/;"	e	enum:__anon6a96e1720303	file:
+PORTC_ADDR	src/main.c	/^    PORTC_ADDR = 0x1006,$/;"	e	enum:__anon6a96e1720403	file:
+PORTD	src/main.c	/^    PORTD,$/;"	e	enum:__anon6a96e1720303	file:
+PORTD_ADDR	src/main.c	/^    PORTD_ADDR = 0x1008,$/;"	e	enum:__anon6a96e1720403	file:
+PORTE	src/main.c	/^    PORTE,$/;"	e	enum:__anon6a96e1720303	file:
+PORTE_ADDR	src/main.c	/^    PORTE_ADDR = 0x100a,$/;"	e	enum:__anon6a96e1720403	file:
+PORTF	src/main.c	/^    PORTF,$/;"	e	enum:__anon6a96e1720303	file:
+PORTF_ADDR	src/main.c	/^    PORTF_ADDR = 0x1005,$/;"	e	enum:__anon6a96e1720403	file:
+PORTG	src/main.c	/^    PORTG$/;"	e	enum:__anon6a96e1720303	file:
+PORTG_ADDR	src/main.c	/^    PORTG_ADDR = 0x1002,$/;"	e	enum:__anon6a96e1720403	file:
+READ_FROM_PORTS	src/main.c	/^uint16_t READ_FROM_PORTS(cpu *cpu, uint16_t addr) {$/;"	f	typeref:typename:uint16_t
+RELATIVE	src/main.c	/^    RELATIVE,$/;"	e	enum:__anon6a96e1720103	file:
+RMB	src/main.c	/^    RMB,$/;"	e	enum:__anon6a96e1720203	file:
+Registres :	README.md	/^### Registres :$/;"	S	section:Emulateur 6811""Fonctionnement
+SET_CMP_FLAGS	src/main.c	/^void SET_CMP_FLAGS(cpu *cpu, uint8_t a, uint8_t v) {$/;"	f	typeref:typename:void
+SET_LD_FLAGS	src/main.c	/^void SET_LD_FLAGS(cpu *cpu, uint8_t result) {$/;"	f	typeref:typename:void
+SRC	Makefile	/^SRC=$(wildcard src\/*.c)$/;"	m
+START	f.asm	/^START equ $c000$/;"	d
+TODO	README.md	/^## TODO$/;"	s	chapter:Emulateur 6811
+WRITE_TO_PORTS	src/main.c	/^uint8_t WRITE_TO_PORTS(cpu *cpu, uint16_t addr) {$/;"	f	typeref:typename:uint8_t
+__anon6a96e1720103	src/main.c	/^typedef enum {$/;"	g	file:
+__anon6a96e1720203	src/main.c	/^typedef enum {$/;"	g	file:
+__anon6a96e1720303	src/main.c	/^typedef enum {$/;"	g	file:
+__anon6a96e1720403	src/main.c	/^typedef enum {$/;"	g	file:
+__anon6a96e1720508	src/main.c	/^typedef struct {$/;"	s	file:
+__anon6a96e1720608	src/main.c	/^typedef struct {$/;"	s	file:
+__anon6a96e1720708	src/main.c	/^typedef struct {$/;"	s	file:
+__anon6a96e1720808	src/main.c	/^typedef struct {$/;"	s	file:
+__anon6a96e1720908	src/main.c	/^typedef struct {$/;"	s	file:
+__anon6a96e1720a0a	src/main.c	/^    union {$/;"	u	struct:__anon6a96e1720908	file:
+__anon6a96e1720b08	src/main.c	/^        struct {$/;"	s	union:__anon6a96e1720908::__anon6a96e1720a0a	file:
+__anon6a96e1720c0a	src/main.c	/^    union {$/;"	u	struct:__anon6a96e1720908	file:
+__anon6a96e1720d08	src/main.c	/^        struct {$/;"	s	union:__anon6a96e1720908::__anon6a96e1720c0a	file:
+a	src/main.c	/^            uint8_t a; \/\/ A is high order$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720a0a::__anon6a96e1720b08	typeref:typename:uint8_t	file:
+add_instructions_func	src/main.c	/^void add_instructions_func() {$/;"	f	typeref:typename:void
+add_mnemonic_to_memory	src/main.c	/^uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {$/;"	f	typeref:typename:uint8_t
+all	Makefile	/^all: main$/;"	t
+b	src/main.c	/^            uint8_t b; \/\/ B is low order$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720a0a::__anon6a96e1720b08	typeref:typename:uint8_t	file:
+c	src/main.c	/^            uint8_t c : 1;$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720c0a::__anon6a96e1720d08	typeref:typename:uint8_t:1	file:
+clean	Makefile	/^clean:$/;"	t
+codes	src/main.c	/^    uint8_t codes[OPERAND_TYPE_COUNT];$/;"	m	struct:__anon6a96e1720508	typeref:typename:uint8_t[]	file:
+cpu	src/main.c	/^} cpu;$/;"	t	typeref:struct:__anon6a96e1720908	file:
+d	src/main.c	/^        uint16_t d;$/;"	m	union:__anon6a96e1720908::__anon6a96e1720a0a	typeref:typename:uint16_t	file:
+ddrx	src/main.c	/^    uint8_t ddrx[MAX_PORTS];$/;"	m	struct:__anon6a96e1720908	typeref:typename:uint8_t[]	file:
+directive	src/main.c	/^} directive;$/;"	t	typeref:struct:__anon6a96e1720808	file:
+directive_type	src/main.c	/^} directive_type;$/;"	t	typeref:enum:__anon6a96e1720203	file:
+directives_name	src/main.c	/^const char *directives_name[] = { "org", "equ" };$/;"	v	typeref:typename:const char * []
+exec_program	src/main.c	/^void exec_program(cpu *cpu, int step) {$/;"	f	typeref:typename:void
+file_line	src/main.c	/^uint32_t file_line = 0;$/;"	v	typeref:typename:uint32_t
+file_name	src/main.c	/^const char *file_name = "f.asm";$/;"	v	typeref:typename:const char *
+from_label	src/main.c	/^    uint8_t from_label;$/;"	m	struct:__anon6a96e1720608	typeref:typename:uint8_t	file:
+get_directive_by_label	src/main.c	/^directive *get_directive_by_label(const char *label, directive *labels, uint8_t label_count) {$/;"	f	typeref:typename:directive *
+get_operand_type	src/main.c	/^operand_type get_operand_type(const char *str, uint16_t value) {$/;"	f	typeref:typename:operand_type
+get_operand_value	src/main.c	/^operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {$/;"	f	typeref:typename:operand
+h	src/main.c	/^            uint8_t h : 1;$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720c0a::__anon6a96e1720d08	typeref:typename:uint8_t:1	file:
+handle_commands	src/main.c	/^void handle_commands(cpu *cpu) {$/;"	f	typeref:typename:void
+i	src/main.c	/^            uint8_t i : 1;$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720c0a::__anon6a96e1720d08	typeref:typename:uint8_t:1	file:
+instr_func	src/main.c	/^void (*instr_func[0x100]) (cpu *cpu) = {INST_NOP};$/;"	v	typeref:typename:void (* [0x100])(cpu * cpu)
+instruction	src/main.c	/^} instruction;$/;"	t	typeref:struct:__anon6a96e1720508	file:
+instructions	src/main.c	/^instruction instructions[] = {$/;"	v	typeref:typename:instruction[]
+is_directive	src/main.c	/^uint8_t is_directive(const char *str) {$/;"	f	typeref:typename:uint8_t
+is_instruction	src/main.c	/^uint8_t is_instruction(const char *buf) {$/;"	f	typeref:typename:uint8_t
+is_str_in_parts	src/main.c	/^uint8_t is_str_in_parts(const char *str, char **parts, uint8_t parts_count) {$/;"	f	typeref:typename:uint8_t
+is_valid_operand_type	src/main.c	/^uint8_t is_valid_operand_type(instruction *inst, operand_type type) {$/;"	f	typeref:typename:uint8_t
+label	src/main.c	/^    const char *label;$/;"	m	struct:__anon6a96e1720808	typeref:typename:const char *	file:
+label_count	src/main.c	/^    uint8_t label_count;$/;"	m	struct:__anon6a96e1720908	typeref:typename:uint8_t	file:
+labels	src/main.c	/^    directive labels[MAX_LABELS];$/;"	m	struct:__anon6a96e1720908	typeref:typename:directive[]	file:
+line_to_directive	src/main.c	/^directive line_to_directive(char *line, directive *labels, uint8_t label_count) {$/;"	f	typeref:typename:directive
+line_to_mnemonic	src/main.c	/^mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, uint16_t addr) {$/;"	f	typeref:typename:mnemonic
+load_program	src/main.c	/^int load_program(cpu *cpu, const char *file_path) {$/;"	f	typeref:typename:int
+main	Makefile	/^main: src\/main.c$/;"	t
+main	src/main.c	/^int main(int argc, char **argv) {$/;"	f	typeref:typename:int
+memory	src/main.c	/^    uint8_t memory[MAX_MEMORY];$/;"	m	struct:__anon6a96e1720908	typeref:typename:uint8_t[]	file:
+mnemonic	src/main.c	/^} mnemonic;$/;"	t	typeref:struct:__anon6a96e1720708	file:
+n	src/main.c	/^            uint8_t n : 1;$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720c0a::__anon6a96e1720d08	typeref:typename:uint8_t:1	file:
+name_count	src/main.c	/^    uint8_t name_count;$/;"	m	struct:__anon6a96e1720508	typeref:typename:uint8_t	file:
+names	src/main.c	/^    char *names[2]; \/\/ Some instructions have aliases like lda = ldaa$/;"	m	struct:__anon6a96e1720508	typeref:typename:char * [2]	file:
+opcode	src/main.c	/^    uint8_t opcode;$/;"	m	struct:__anon6a96e1720708	typeref:typename:uint8_t	file:
+opcode_str_to_hex	src/main.c	/^instruction * opcode_str_to_hex(const char *str) {$/;"	f	typeref:typename:instruction *
+operand	src/main.c	/^    operand operand;$/;"	m	struct:__anon6a96e1720708	typeref:typename:operand	file:
+operand	src/main.c	/^    operand operand;$/;"	m	struct:__anon6a96e1720808	typeref:typename:operand	file:
+operand	src/main.c	/^} operand;$/;"	t	typeref:struct:__anon6a96e1720608	file:
+operand_type	src/main.c	/^} operand_type;$/;"	t	typeref:enum:__anon6a96e1720103	file:
+operands	src/main.c	/^    operand_type operands[OPERAND_TYPE_COUNT];$/;"	m	struct:__anon6a96e1720508	typeref:typename:operand_type[]	file:
+org	f.asm	/^org START$/;"	l
+pc	src/main.c	/^    uint16_t pc;$/;"	m	struct:__anon6a96e1720908	typeref:typename:uint16_t	file:
+ports	src/main.c	/^    uint8_t ports[MAX_PORTS];$/;"	m	struct:__anon6a96e1720908	typeref:typename:uint8_t[]	file:
+ports	src/main.c	/^} ports;$/;"	t	typeref:enum:__anon6a96e1720303	file:
+ports_addr	src/main.c	/^} ports_addr;$/;"	t	typeref:enum:__anon6a96e1720403	file:
+print_cpu_state	src/main.c	/^void print_cpu_state(cpu *cpu) {$/;"	f	typeref:typename:void
+print_memory_range	src/main.c	/^void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {$/;"	f	typeref:typename:void
+s	src/main.c	/^            uint8_t s : 1;$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720c0a::__anon6a96e1720d08	typeref:typename:uint8_t:1	file:
+sec	f.asm	/^sec$/;"	l
+set_default_ddr	src/main.c	/^void set_default_ddr(cpu *cpu) {$/;"	f	typeref:typename:void
+sp	src/main.c	/^    uint16_t sp;$/;"	m	struct:__anon6a96e1720908	typeref:typename:uint16_t	file:
+split_by_space	src/main.c	/^uint8_t split_by_space(char *str, char **out, uint8_t n) {$/;"	f	typeref:typename:uint8_t
+status	src/main.c	/^        uint8_t status;$/;"	m	union:__anon6a96e1720908::__anon6a96e1720c0a	typeref:typename:uint8_t	file:
+str_empty	src/main.c	/^int str_empty(const char *str) {$/;"	f	typeref:typename:int
+str_prefix	src/main.c	/^uint8_t str_prefix(const char *str, const char *pre)$/;"	f	typeref:typename:uint8_t
+str_tolower	src/main.c	/^void str_tolower(char *str) {$/;"	f	typeref:typename:void
+strdup	src/main.c	/^const char *strdup(const char *base) {$/;"	f	typeref:typename:const char *
+type	src/main.c	/^    directive_type type;$/;"	m	struct:__anon6a96e1720808	typeref:typename:directive_type	file:
+type	src/main.c	/^    operand_type type;$/;"	m	struct:__anon6a96e1720608	typeref:typename:operand_type	file:
+v	src/main.c	/^            uint8_t v : 1;$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720c0a::__anon6a96e1720d08	typeref:typename:uint8_t:1	file:
+value	src/main.c	/^    uint16_t value;$/;"	m	struct:__anon6a96e1720608	typeref:typename:uint16_t	file:
+x	src/main.c	/^            uint8_t x : 1;$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720c0a::__anon6a96e1720d08	typeref:typename:uint8_t:1	file:
+z	src/main.c	/^            uint8_t z : 1;$/;"	m	struct:__anon6a96e1720908::__anon6a96e1720c0a::__anon6a96e1720d08	typeref:typename:uint8_t:1	file:
