@@ -208,9 +208,34 @@ instruction instructions[] = {
         .operands = { RELATIVE }
     },
     {
+        .names = {"clv"}, .name_count = 1,
+        .codes = {[NONE]=0x0A},
+        .operands = { NONE }
+    },
+    {
+        .names = {"sev"}, .name_count = 1,
+        .codes = {[NONE]=0x0B},
+        .operands = { NONE }
+    },
+    {
+        .names = {"clc"}, .name_count = 1,
+        .codes = {[NONE]=0x0C},
+        .operands = { NONE }
+    },
+    {
         .names = {"sec"}, .name_count = 1,
-        .codes = {[RELATIVE]=0x0D},
-        .operands = { RELATIVE }
+        .codes = {[NONE]=0x0D},
+        .operands = { NONE }
+    },
+    {
+        .names = {"cli"}, .name_count = 1,
+        .codes = {[NONE]=0x0E},
+        .operands = { NONE }
+    },
+    {
+        .names = {"sei"}, .name_count = 1,
+        .codes = {[NONE]=0x0F},
+        .operands = { NONE }
     },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
@@ -651,10 +676,6 @@ void INST_CMPB_EXT(cpu *cpu) {
     uint8_t b = cpu->b;
     uint8_t v = EXT_WORD(cpu);
     SET_CMP_FLAGS(cpu, b, v);
-}
-
-void INST_SEC(cpu *cpu) {
-    cpu->c = 1;
 }
 
 /*****************************
