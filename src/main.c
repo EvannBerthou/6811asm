@@ -12,6 +12,17 @@
 #define FMT16 "0x%04x"
 
 typedef enum {
+    CARRY = 0x1,
+    OFLOW = 0x2,
+    ZERO  = 0x4,
+    NEG   = 0x8,
+    IRQ   = 0x10,
+    HALFC = 0x20,
+    XIRQ  = 0x40,
+    STOP  = 0x80,
+} flags;
+
+typedef enum {
     NONE,
     IMMEDIATE,
     EXTENDED,
@@ -157,6 +168,22 @@ uint8_t EXT_WORD(cpu *cpu) {
     return cpu->memory[NEXT16(cpu)];
 }
 
+void SET_FLAGS(cpu *cpu, int16_t result, uint8_t flags) {
+    if (flags & CARRY) {
+        cpu->c = (result > 0xFF) || (result < 0);
+    }
+    if (flags & OFLOW) {
+        cpu->v = (result >= 127 || result <= -128);
+    }
+    if (flags & ZERO) {
+        cpu->z = (result == 0);
+    }
+    if (flags & NEG) {
+        cpu->n = (result >> 7) & 1;
+    }
+    // TODO: IRQ, HALF CARRY, XIRQ, STOP
+}
+
 void INST_NOP(cpu *cpu) {
     (void) cpu;
     // DOES NOTHING
@@ -266,84 +293,55 @@ void INST_LDB_EXT(cpu *cpu) {
 void INST_ABA(cpu *cpu) {
     int16_t result = cpu->a + cpu->b;
     cpu->a = result & 0xFF;
-    cpu->h = 0; // TODO
-    cpu->n = (result >> 7) & 1;
-    cpu->z = (result == 0);
-    cpu->v = (result >= 127 || result <= -128);
-    cpu->c = (result > 0xFF);
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCA_IMM(cpu *cpu) {
     uint8_t v = NEXT8(cpu);
     int16_t result = cpu->a + v + cpu->c;
     cpu->a = result & 0xFF;
-    cpu->h = 0; // TODO
-    cpu->n = (result >> 7) & 1;
-    cpu->z = (result == 0);
-    cpu->v = (result >= 127 || result <= -128);
-    cpu->c = (result > 0xFF);
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCA_DIR(cpu *cpu) {
     uint8_t v = DIR_WORD(cpu);
     int16_t result = cpu->a + v + cpu->c;
     cpu->a = result & 0xFF;
-    cpu->h = 0; // TODO
-    cpu->n = (result >> 7) & 1;
-    cpu->z = (result == 0);
-    cpu->v = (result >= 127 || result <= -128);
-    cpu->c = (result > 0xFF);
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCA_EXT(cpu *cpu) {
     uint8_t v = EXT_WORD(cpu);
     int16_t result = cpu->a + v + cpu->c;
     cpu->a = result & 0xFF;
-    cpu->h = 0; // TODO
-    cpu->n = (result >> 7) & 1;
-    cpu->z = (result == 0);
-    cpu->v = (result >= 127 || result <= -128);
-    cpu->c = (result > 0xFF);
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCB_IMM(cpu *cpu) {
     uint8_t v = NEXT8(cpu);
     int16_t result = cpu->b + v + cpu->c;
     cpu->b = result & 0xFF;
-    cpu->h = 0; // TODO
-    cpu->n = (result >> 7) & 1;
-    cpu->z = (result == 0);
-    cpu->v = (result >= 127 || result <= -128);
-    cpu->c = (result > 0xFF);
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCB_DIR(cpu *cpu) {
     uint8_t v = DIR_WORD(cpu);
     int16_t result = cpu->b + v + cpu->c;
     cpu->b = result & 0xFF;
-    cpu->h = 0; // TODO
-    cpu->n = (result >> 7) & 1;
-    cpu->z = (result == 0);
-    cpu->v = (result >= 127 || result <= -128);
-    cpu->c = (result > 0xFF);
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCB_EXT(cpu *cpu) {
     uint8_t v = EXT_WORD(cpu);
     int16_t result = cpu->b + v + cpu->c;
     cpu->b = result & 0xFF;
-    cpu->h = 0; // TODO
-    cpu->n = (result >> 7) & 1;
-    cpu->z = (result == 0);
-    cpu->v = (result >= 127 || result <= -128);
-    cpu->c = (result > 0xFF);
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_STA_DIR(cpu *cpu) {
     uint8_t addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->a;
-    cpu->n = (cpu->a >> 7) & 1;
-    cpu->z = cpu->a == 0;
+    SET_FLAGS(cpu, cpu->a, ZERO | NEG);
     cpu->v = 0;
 }
 
@@ -399,16 +397,14 @@ void INST_STA_EXT(cpu *cpu) {
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->a;
     }
-    cpu->n = (cpu->a >> 7) & 1;
-    cpu->z = cpu->a == 0;
+    SET_FLAGS(cpu, cpu->a, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_STB_DIR(cpu *cpu) {
     uint8_t addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->b;
-    cpu->n = (cpu->a >> 7) & 1;
-    cpu->z = cpu->a == 0;
+    SET_FLAGS(cpu, cpu->a, ZERO | NEG);
     cpu->v = 0;
 }
 
@@ -417,8 +413,7 @@ void INST_STB_EXT(cpu *cpu) {
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->b;
     }
-    cpu->n = (cpu->a >> 7) & 1;
-    cpu->z = cpu->a == 0;
+    SET_FLAGS(cpu, cpu->a, ZERO | NEG);
     cpu->v = 0;
 }
 
@@ -532,28 +527,19 @@ void INST_BVS(cpu *cpu) {
 
 void INST_TAB(cpu *cpu) {
     cpu->b = cpu->a;
-    cpu->n = (cpu->b >> 7) & 1;
-    cpu->z = cpu->b == 0;
+    SET_FLAGS(cpu, cpu->b, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_TBA(cpu *cpu) {
     cpu->a = cpu->b;
-    cpu->n = (cpu->a >> 7) & 1;
-    cpu->z = cpu->a == 0;
+    SET_FLAGS(cpu, cpu->b, ZERO | NEG);
     cpu->v = 0;
 }
 
 void SET_CMP_FLAGS(cpu *cpu, uint8_t a, uint8_t v) {
     int16_t r = a - v;
-    // Copy most significant bit (MSB) is in fourth position == Negative status flag
-    cpu->n = (r >> 7) & 1;
-    // Sets zero status flag
-    cpu->z = (r == 0);
-    // Sets overflow flag
-    cpu->v = (r >= 127 || r <= -128);
-    // Sets carry flag
-    cpu->c = (a < v);
+    SET_FLAGS(cpu, r, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_CMPA_IMM(cpu *cpu) {
