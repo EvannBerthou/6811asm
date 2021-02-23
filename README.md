@@ -157,7 +157,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Support des opcode en 2 mots
     - Support des opcodes avec 2 operands (ex: bclr)
     - Pouvoir changer la valeur des ports d'entrée
-    - Ajout automatique des instructions
     - Changer la structure d'une ligne pour être sous la forme:
         [LABEL] opcode [operand] [; commentaire]
 

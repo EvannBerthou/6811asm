@@ -135,22 +135,26 @@ void (*instr_func[0x100]) (cpu *cpu) = {0};
 *        Instructions        *
 *****************************/
 
-uint8_t DIR_WORD(cpu *cpu) {
-    // Get value of the next operand
-    uint8_t addr = cpu->memory[++cpu->pc];
-    // Get value the operand is poiting at
-    return cpu->memory[addr];
+uint8_t NEXT8(cpu *cpu) {
+    return cpu->memory[++cpu->pc];
 }
 
-uint16_t NEXT_16(cpu *cpu) {
-    uint8_t b0 = cpu->memory[++cpu->pc]; // high order byte
-    uint8_t b1 = cpu->memory[++cpu->pc]; // low order byte
+uint16_t NEXT16(cpu *cpu) {
+    uint8_t b0 = NEXT8(cpu); // high order byte
+    uint8_t b1 = NEXT8(cpu); // low order byte
     uint16_t joined = (b0 << 8) | b1;
     return joined;
 }
 
+uint8_t DIR_WORD(cpu *cpu) {
+    // Get value of the next operand
+    uint8_t addr = NEXT8(cpu);
+    // Get value the operand is poiting at
+    return cpu->memory[addr];
+}
+
 uint8_t EXT_WORD(cpu *cpu) {
-    return cpu->memory[NEXT_16(cpu)];
+    return cpu->memory[NEXT16(cpu)];
 }
 
 void INST_NOP(cpu *cpu) {
@@ -209,7 +213,7 @@ void SET_LD_FLAGS(cpu *cpu, uint8_t result) {
 
 void INST_LDA_IMM(cpu *cpu) {
     // Operand is a constant, just load the next byte in memory
-    uint8_t value = cpu->memory[++cpu->pc];
+    uint8_t value = NEXT8(cpu);
     cpu->a = value;
     SET_LD_FLAGS(cpu, value);
 }
@@ -221,7 +225,7 @@ void INST_LDA_DIR(cpu *cpu) {
 }
 
 void INST_LDA_EXT(cpu *cpu) {
-    uint16_t addr = NEXT_16(cpu);
+    uint16_t addr = NEXT16(cpu);
     uint16_t port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->a = port_val;
@@ -235,7 +239,7 @@ void INST_LDA_EXT(cpu *cpu) {
 
 void INST_LDB_IMM(cpu *cpu) {
     // Operand is a constant, just load the next byte in memory
-    uint8_t value = cpu->memory[++cpu->pc];
+    uint8_t value = NEXT8(cpu);
     cpu->b = value;
     SET_LD_FLAGS(cpu, value);
 }
@@ -247,7 +251,7 @@ void INST_LDB_DIR(cpu *cpu) {
 }
 
 void INST_LDB_EXT(cpu *cpu) {
-    uint16_t addr = NEXT_16(cpu);
+    uint16_t addr = NEXT16(cpu);
     uint16_t port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->b = port_val;
@@ -270,7 +274,7 @@ void INST_ABA(cpu *cpu) {
 }
 
 void INST_STA_DIR(cpu *cpu) {
-    uint8_t addr = cpu->memory[++cpu->pc];
+    uint8_t addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->a;
     cpu->n = (cpu->a >> 7) & 1;
     cpu->z = cpu->a == 0;
@@ -325,7 +329,7 @@ uint8_t WRITE_TO_PORTS(cpu *cpu, uint16_t addr) {
 }
 
 void INST_STA_EXT(cpu *cpu) {
-    uint16_t addr = NEXT_16(cpu);
+    uint16_t addr = NEXT16(cpu);
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->a;
     }
@@ -335,7 +339,7 @@ void INST_STA_EXT(cpu *cpu) {
 }
 
 void INST_STB_DIR(cpu *cpu) {
-    uint8_t addr = cpu->memory[++cpu->pc];
+    uint8_t addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->b;
     cpu->n = (cpu->a >> 7) & 1;
     cpu->z = cpu->a == 0;
@@ -343,7 +347,7 @@ void INST_STB_DIR(cpu *cpu) {
 }
 
 void INST_STB_EXT(cpu *cpu) {
-    uint16_t addr = NEXT_16(cpu);
+    uint16_t addr = NEXT16(cpu);
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->b;
     }
@@ -353,108 +357,108 @@ void INST_STB_EXT(cpu *cpu) {
 }
 
 void INST_BRA(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     cpu->pc += (int8_t) jmp;
 }
 
 void INST_BCC(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->c == 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BCS(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->c == 1) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BEQ(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->z == 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BGE(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if ((cpu->n ^ cpu->v) == 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BGT(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->z + (cpu->n ^ cpu->v) == 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BHI(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->c + cpu->z == 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BLE(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->z + (cpu->n ^ cpu->c) != 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BLS(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->c + cpu->z != 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BLT(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->n + cpu->v != 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BMI(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->n == 1) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BNE(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->z == 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BPL(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->n == 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BRN(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     (void) jmp;
 }
 
 void INST_BVC(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->v == 0) {
         cpu->pc += (int8_t) jmp;
     }
 }
 
 void INST_BVS(cpu *cpu) {
-    uint8_t jmp = cpu->memory[++cpu->pc];
+    uint8_t jmp = NEXT8(cpu);
     if (cpu->v == 1) {
         cpu->pc += (int8_t) jmp;
     }
@@ -488,7 +492,7 @@ void SET_CMP_FLAGS(cpu *cpu, uint8_t a, uint8_t v) {
 
 void INST_CMPA_IMM(cpu *cpu) {
     uint8_t a = cpu->a;
-    uint8_t v = cpu->memory[++cpu->pc];
+    uint8_t v = NEXT8(cpu);
     SET_CMP_FLAGS(cpu, a, v);
 }
 
@@ -506,7 +510,7 @@ void INST_CMPA_EXT(cpu *cpu) {
 
 void INST_CMPB_IMM(cpu *cpu) {
     uint8_t b = cpu->b;
-    uint8_t v = cpu->memory[++cpu->pc];
+    uint8_t v = NEXT8(cpu);
     SET_CMP_FLAGS(cpu, b, v);
 }
 
