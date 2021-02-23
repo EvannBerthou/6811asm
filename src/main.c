@@ -273,6 +273,72 @@ void INST_ABA(cpu *cpu) {
     cpu->c = (result > 0xFF);
 }
 
+void INST_ADCA_IMM(cpu *cpu) {
+    uint8_t v = NEXT8(cpu);
+    int16_t result = cpu->a + v + cpu->c;
+    cpu->a = result & 0xFF;
+    cpu->h = 0; // TODO
+    cpu->n = (result >> 7) & 1;
+    cpu->z = (result == 0);
+    cpu->v = (result >= 127 || result <= -128);
+    cpu->c = (result > 0xFF);
+}
+
+void INST_ADCA_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int16_t result = cpu->a + v + cpu->c;
+    cpu->a = result & 0xFF;
+    cpu->h = 0; // TODO
+    cpu->n = (result >> 7) & 1;
+    cpu->z = (result == 0);
+    cpu->v = (result >= 127 || result <= -128);
+    cpu->c = (result > 0xFF);
+}
+
+void INST_ADCA_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    int16_t result = cpu->a + v + cpu->c;
+    cpu->a = result & 0xFF;
+    cpu->h = 0; // TODO
+    cpu->n = (result >> 7) & 1;
+    cpu->z = (result == 0);
+    cpu->v = (result >= 127 || result <= -128);
+    cpu->c = (result > 0xFF);
+}
+
+void INST_ADCB_IMM(cpu *cpu) {
+    uint8_t v = NEXT8(cpu);
+    int16_t result = cpu->b + v + cpu->c;
+    cpu->b = result & 0xFF;
+    cpu->h = 0; // TODO
+    cpu->n = (result >> 7) & 1;
+    cpu->z = (result == 0);
+    cpu->v = (result >= 127 || result <= -128);
+    cpu->c = (result > 0xFF);
+}
+
+void INST_ADCB_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int16_t result = cpu->b + v + cpu->c;
+    cpu->b = result & 0xFF;
+    cpu->h = 0; // TODO
+    cpu->n = (result >> 7) & 1;
+    cpu->z = (result == 0);
+    cpu->v = (result >= 127 || result <= -128);
+    cpu->c = (result > 0xFF);
+}
+
+void INST_ADCB_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    int16_t result = cpu->b + v + cpu->c;
+    cpu->b = result & 0xFF;
+    cpu->h = 0; // TODO
+    cpu->n = (result >> 7) & 1;
+    cpu->z = (result == 0);
+    cpu->v = (result >= 127 || result <= -128);
+    cpu->c = (result > 0xFF);
+}
+
 void INST_STA_DIR(cpu *cpu) {
     uint8_t addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->a;
@@ -570,6 +636,26 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x1B},
         .func = {[INHERENT]=INST_ABA},
         .operands = { INHERENT }
+    },
+    {
+        .names = {"adca"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x89, [DIRECT]=0x99, [EXTENDED]=0xB9},
+        .func =  {
+            [IMMEDIATE]=INST_ADCA_IMM,
+            [DIRECT]=INST_ADCA_DIR,
+            [EXTENDED]=INST_ADCA_EXT
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+    },
+    {
+        .names = {"adcb"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xC9, [DIRECT]=0xD9, [EXTENDED]=0xF9},
+        .func =  {
+            [IMMEDIATE]=INST_ADCB_IMM,
+            [DIRECT]=INST_ADCB_DIR,
+            [EXTENDED]=INST_ADCB_EXT
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT }
     },
     {
         .names = {"tab"}, .name_count = 1,
