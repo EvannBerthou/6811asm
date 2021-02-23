@@ -338,6 +338,49 @@ void INST_ADCB_EXT(cpu *cpu) {
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
+void INST_ADDA_IMM(cpu *cpu) {
+    uint8_t v = NEXT8(cpu);
+    int16_t result = cpu->a + v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_ADDA_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int16_t result = cpu->a + v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_ADDA_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    int16_t result = cpu->a + v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_ADDB_IMM(cpu *cpu) {
+    uint8_t v = NEXT8(cpu);
+    int16_t result = cpu->b + v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_ADDB_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int16_t result = cpu->b + v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_ADDB_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    int16_t result = cpu->b + v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+
 void INST_STA_DIR(cpu *cpu) {
     uint8_t addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->a;
@@ -640,6 +683,26 @@ instruction instructions[] = {
             [IMMEDIATE]=INST_ADCB_IMM,
             [DIRECT]=INST_ADCB_DIR,
             [EXTENDED]=INST_ADCB_EXT
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+    },
+    {
+        .names = {"adda"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x8B, [DIRECT]=0x9B, [EXTENDED]=0xBB},
+        .func =  {
+            [IMMEDIATE]=INST_ADDA_IMM,
+            [DIRECT]=INST_ADDA_DIR,
+            [EXTENDED]=INST_ADDA_EXT
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+    },
+    {
+        .names = {"addb"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xCB, [DIRECT]=0xDB, [EXTENDED]=0xFB},
+        .func =  {
+            [IMMEDIATE]=INST_ADDB_IMM,
+            [DIRECT]=INST_ADDB_DIR,
+            [EXTENDED]=INST_ADDB_EXT
         },
         .operands = { IMMEDIATE, EXTENDED, DIRECT }
     },
