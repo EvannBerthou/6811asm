@@ -81,6 +81,7 @@ typedef struct {
 
 typedef struct {
     const char *label;
+    const char *opcode_str;
     operand operand;
     directive_type type;
 } directive;
@@ -1121,7 +1122,8 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
         if (inst->operands[0] == RELATIVE) {
             uint16_t operand_value = result.operand.value;
             if (result.operand.from_label) {
-                operand_value = result.operand.value - addr - 2;
+                int8_t offset = result.operand.value - addr - 2;
+                operand_value = offset;
             } else {
                 if (result.operand.value > 0xFF) {
                     ERROR("Relative addressing mode only supports 8 bits operands ("FMT16">0xFF)",
@@ -1163,7 +1165,7 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
     char *parts[5] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
-        return (directive) {NULL, {0, NONE, 0}, NOT_A_DIRECTIVE};
+        return (directive) {NULL, NULL, {0, NONE, 0}, NOT_A_DIRECTIVE};
     }
 
     // If there is a label
@@ -1172,7 +1174,7 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
             ERROR("%s", "equ format : <LABEL> equ <VALUE>");
         }
         operand operand = get_operand_value(parts[2], labels, label_count);
-        return (directive) {strdup(parts[0]), {operand.value, operand.type, operand.from_label}, CONSTANT};
+        return (directive) {strdup(parts[0]), NULL, {operand.value, operand.type, operand.from_label}, CONSTANT};
     }
     if (is_str_in_parts("org", parts, nb_parts)) {
         if (nb_parts != 3) {
@@ -1182,14 +1184,14 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         if (operand.type == NONE) {
             ERROR("%s", "No operand found\n");
         }
-        return (directive) {NULL, {operand.value, EXTENDED, operand.from_label}, ORG};
+        return (directive) {NULL, NULL, {operand.value, EXTENDED, operand.from_label}, ORG};
     }
 
     if (parts[0] != NULL) {
-        return (directive) {strdup(parts[0]), {0, EXTENDED, 1}, LABEL};
+        return (directive) {strdup(parts[0]), parts[1], {0, EXTENDED, 1}, LABEL};
     }
 
-    return (directive) {parts[1], {0, NONE, 0}, NOT_A_DIRECTIVE};
+    return (directive) {NULL, parts[1], {0, NONE, 0}, NOT_A_DIRECTIVE};
 }
 
 int load_program(cpu *cpu, const char *file_path) {
@@ -1214,14 +1216,6 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         str_tolower(buf);
         directive d = line_to_directive(buf, cpu->labels, cpu->label_count);
-        if (d.type == NOT_A_DIRECTIVE) {
-            instruction *inst = opcode_str_to_hex(d.label);
-            if (inst == NULL) { continue; }
-
-            addr++;
-            uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
-            if (need_operand) addr++;
-        }
         if (d.type == CONSTANT) {
             cpu->labels[cpu->label_count++] = d;
         } else if (d.type == ORG) {
@@ -1229,6 +1223,14 @@ int load_program(cpu *cpu, const char *file_path) {
         } else if (d.type == LABEL) {
             d.operand.value = addr;
             cpu->labels[cpu->label_count++] = d;
+        }
+        if (d.opcode_str != NULL) {
+            instruction *inst = opcode_str_to_hex(d.opcode_str);
+            if (inst == NULL) { continue; }
+
+            addr++;
+            uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
+            if (need_operand) addr++;
         }
     }
 
