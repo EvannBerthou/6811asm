@@ -1,3 +1,8 @@
+fdskjlfsd
+kfds
+kfsd
+fksdfksd
+
 START equ $c150
 
         org START

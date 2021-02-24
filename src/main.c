@@ -464,7 +464,6 @@ void INST_STB_EXT(cpu *cpu) {
 void INST_BRA(cpu *cpu) {
     uint8_t jmp = NEXT8(cpu);
     cpu->pc += (int8_t) jmp;
-    printf("PC JMP: "FMT8"\n", cpu->pc);
 }
 
 void INST_BCC(cpu *cpu) {
@@ -1028,14 +1027,6 @@ uint8_t split_by_space(char *str, char **out, uint8_t n) {
         }
         str++;
     }
-    for (uint8_t i = 0; i < nb_parts; ++i) {
-        if (out[i] == NULL) {
-            printf("NULL\n");
-        } else {
-            printf("%s\n", out[i]);
-        }
-    }
-    printf("\n");
     return nb_parts;
 }
 
@@ -1283,10 +1274,7 @@ void handle_commands(cpu *cpu) {
         }
         // Removes new line
         buf[strcspn(buf, "\n")] = '\0';
-        if (strcmp(buf, "pc") == 0) {
-            printf("PC : "FMT8"\n", cpu->pc);
-        }
-        else if (strcmp(buf, "ra") == 0) {
+        if (strcmp(buf, "ra") == 0) {
             printf("Register A: "FMT8"\n", cpu->a);
         } else if (strcmp(buf, "rb") == 0) {
             printf("Register B: "FMT8"\n", cpu->b);
@@ -1306,12 +1294,29 @@ void handle_commands(cpu *cpu) {
             }
             uint16_t range = l & 0xFFFF;
             print_memory_range(cpu, cpu->pc, range);
+        } else if (str_prefix(buf, "prev")) {
+            const char *arg = buf + strlen("prev");
+            char *end;
+            long l = strtol(arg, &end, 0);
+            if (l == 0 && arg == end) {
+                printf("Invalid argument\n");
+                continue;
+            }
+            if (l > 0xFFFF) {
+                printf("Argument is too big\n");
+                continue;
+            }
+            uint16_t range = l & 0xFFFF;
+            if (cpu->pc - range < 0) range = cpu->pc; // Avoid going before 0x0000
+            print_memory_range(cpu, cpu->pc - range, range);
         } else if (strcmp(buf, "status") == 0) {
             printf("Status : ");
             for (int i = 0; i < 8; ++i) {
                 printf("%d", cpu->status >> i & 0x1);
             }
             printf("\n");
+        } else if (strcmp(buf, "pc") == 0) {
+            printf("PC : "FMT8"\n", cpu->pc);
         } else if (strcmp(buf, "labels") == 0) {
             printf("%d labels loaded\n", cpu->label_count);
             for (int i = 0; i < cpu->label_count; ++i) {
