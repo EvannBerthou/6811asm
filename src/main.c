@@ -897,6 +897,7 @@ uint8_t str_prefix(const char *str, const char *pre)
 
 uint8_t is_str_in_parts(const char *str, char **parts, uint8_t parts_count) {
     for (uint8_t i = 0; i < parts_count; i++) {
+        if (parts[i] == NULL) continue;
         if (strcmp(parts[i], str) == 0) return 1;
     }
     return 0;
@@ -1004,6 +1005,12 @@ uint8_t split_by_space(char *str, char **out, uint8_t n) {
         if (*str == ' ' || *str == '\n' || *str == '\t' || *str == '\r') {
             if (state == 1) {
                 *str = '\0';
+            } else {
+                // Means there is no label on this line
+                if (nb_parts == 0) {
+                    out[0] = NULL;
+                    nb_parts++;
+                }
             }
             state = 0;
         } else if (state == 0) {
@@ -1019,6 +1026,14 @@ uint8_t split_by_space(char *str, char **out, uint8_t n) {
         }
         str++;
     }
+    for (uint8_t i = 0; i < nb_parts; ++i) {
+        if (out[i] == NULL) {
+            printf("NULL\n");
+        } else {
+            printf("%s\n", out[i]);
+        }
+    }
+    printf("\n");
     return nb_parts;
 }
 
@@ -1076,33 +1091,39 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
 }
 
 mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, uint16_t addr) {
-    char *parts[3] = {0};
-    uint8_t nb_parts = split_by_space(line, parts, 3);
+    char *parts[5] = {0};
+    uint8_t nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
         return (mnemonic) {0, {0, 0, 0}};
     }
-    if (nb_parts > 2) {
-        ERROR("`%s` %s", line, "has many operands");
-    }
 
-    const directive *directive = get_directive_by_label(parts[0], labels, label_count);
-    if (directive != NULL && directive->type == LABEL) {
+    // If there is only a label
+    if (nb_parts == 1 && parts[0] != NULL) {
         return (mnemonic) {0, {0, 0, 0}};
     }
 
-    instruction *inst = opcode_str_to_hex(parts[0]);
+    nb_parts--; // Does as if there was no label
+
+    if (parts[0] != NULL) {
+        const directive *directive = get_directive_by_label(parts[0], labels, label_count);
+        if (directive != NULL && directive->type == LABEL) {
+            return (mnemonic) {0, {0, 0, 0}};
+        }
+    }
+
+    instruction *inst = opcode_str_to_hex(parts[1]);
     if (inst == NULL) {
-        ERROR("%s is an undefined (or not implemented) instruction", parts[0]);
+        ERROR("%s is an undefined (or not implemented) instruction", parts[1]);
     }
 
     uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
     if (need_operand != (nb_parts - 1)) { // need an operand but none were given
-        ERROR("%s instruction requires %d operand but %d recieved\n", parts[0], need_operand, nb_parts - 1);
+        ERROR("%s instruction requires %d operand but %d recieved\n", parts[1], need_operand, nb_parts - 1);
     }
 
     mnemonic result = {0};
     if (need_operand) {
-        result.operand = get_operand_value(parts[1], labels, label_count);
+        result.operand = get_operand_value(parts[2], labels, label_count);
         if (inst->operands[0] == RELATIVE) {
             uint16_t operand_value = result.operand.value;
             if (result.operand.from_label) {
@@ -1118,7 +1139,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
         }
         // Checks if the given addressig mode is used by this instruction
         else if (!is_valid_operand_type(inst, result.operand.type)) {
-            ERROR("%s does not support %s addressing mode\n", parts[0], "TODO");
+            ERROR("%s does not support %s addressing mode\n", parts[1], "TODO");
         }
     } else if (inst->operands[0] == INHERENT) {
         result.operand.type = INHERENT;
@@ -1145,12 +1166,16 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
 }
 
 directive line_to_directive(char *line, directive *labels, uint8_t label_count) {
-    char *parts[3] = {0};
-    uint8_t nb_parts = split_by_space(line, parts, 3);
+    char *parts[5] = {0};
+    uint8_t nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
         return (directive) {NULL, {0, NONE, 0}, NOT_A_DIRECTIVE};
     }
 
+    // If there is a label
+    if (parts[0] != NULL) {
+        return (directive) {strdup(parts[0]), {0, EXTENDED, 1}, LABEL};
+    }
 
     if (is_str_in_parts("equ", parts, nb_parts)) {
         if (nb_parts != 3) {
@@ -1160,25 +1185,17 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         return (directive) {strdup(parts[0]), {operand.value, operand.type, operand.from_label}, CONSTANT};
     }
     if (is_str_in_parts("org", parts, nb_parts)) {
-        if (nb_parts != 2) {
-            ERROR("%s", "ORG format : ORG <ADDR> ($<VALUE>)");
+        if (nb_parts != 3) {
+            ERROR("%s", "ORG format : [LABEL] ORG <ADDR> ($<VALUE>)");
         }
-
-        operand operand = get_operand_value(parts[1], labels, label_count);
+        operand operand = get_operand_value(parts[2], labels, label_count);
         if (operand.type == NONE) {
             ERROR("%s", "No operand found\n");
         }
         return (directive) {NULL, {operand.value, EXTENDED, operand.from_label}, ORG};
     }
 
-    if (!is_instruction(parts[0])) {
-        if (nb_parts != 1) {
-            ERROR("%s", "Label format : <LABEL>");
-        }
-        return (directive) {strdup(parts[0]), {0, EXTENDED, 1}, LABEL};
-    }
-
-    return (directive) {NULL, {0, NONE, 0}, NOT_A_DIRECTIVE};
+    return (directive) {parts[1], {0, NONE, 0}, NOT_A_DIRECTIVE};
 }
 
 int load_program(cpu *cpu, const char *file_path) {
@@ -1204,11 +1221,7 @@ int load_program(cpu *cpu, const char *file_path) {
         str_tolower(buf);
         directive d = line_to_directive(buf, cpu->labels, cpu->label_count);
         if (d.type == NOT_A_DIRECTIVE) {
-            char *parts[5] = {0};
-            uint8_t nb_parts = split_by_space(buf, parts, 5);
-            if (nb_parts == 0) { continue; }
-
-            instruction *inst = opcode_str_to_hex(parts[0]);
+            instruction *inst = opcode_str_to_hex(d.label);
             if (inst == NULL) { continue; }
 
             addr++;
