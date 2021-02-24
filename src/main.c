@@ -1104,13 +1104,6 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
 
     nb_parts--; // Does as if there was no label
 
-    if (parts[0] != NULL) {
-        const directive *directive = get_directive_by_label(parts[0], labels, label_count);
-        if (directive != NULL && directive->type == LABEL) {
-            return (mnemonic) {0, {0, 0, 0}};
-        }
-    }
-
     instruction *inst = opcode_str_to_hex(parts[1]);
     if (inst == NULL) {
         ERROR("%s is an undefined (or not implemented) instruction", parts[1]);
