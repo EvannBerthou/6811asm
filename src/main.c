@@ -1173,10 +1173,6 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
     }
 
     // If there is a label
-    if (parts[0] != NULL) {
-        return (directive) {strdup(parts[0]), {0, EXTENDED, 1}, LABEL};
-    }
-
     if (is_str_in_parts("equ", parts, nb_parts)) {
         if (nb_parts != 3) {
             ERROR("%s", "equ format : <LABEL> equ <VALUE>");
@@ -1193,6 +1189,10 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
             ERROR("%s", "No operand found\n");
         }
         return (directive) {NULL, {operand.value, EXTENDED, operand.from_label}, ORG};
+    }
+
+    if (parts[0] != NULL) {
+        return (directive) {strdup(parts[0]), {0, EXTENDED, 1}, LABEL};
     }
 
     return (directive) {parts[1], {0, NONE, 0}, NOT_A_DIRECTIVE};
