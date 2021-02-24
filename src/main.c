@@ -463,6 +463,7 @@ void INST_STB_EXT(cpu *cpu) {
 void INST_BRA(cpu *cpu) {
     uint8_t jmp = NEXT8(cpu);
     cpu->pc += (int8_t) jmp;
+    printf("PC JMP: "FMT8"\n", cpu->pc);
 }
 
 void INST_BCC(cpu *cpu) {
@@ -1120,7 +1121,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
         if (inst->operands[0] == RELATIVE) {
             uint16_t operand_value = result.operand.value;
             if (result.operand.from_label) {
-                operand_value = result.operand.value - addr;
+                operand_value = result.operand.value - addr - 2;
             } else {
                 if (result.operand.value > 0xFF) {
                     ERROR("Relative addressing mode only supports 8 bits operands ("FMT16">0xFF)",
@@ -1280,8 +1281,10 @@ void handle_commands(cpu *cpu) {
         }
         // Removes new line
         buf[strcspn(buf, "\n")] = '\0';
-
-        if (strcmp(buf, "ra") == 0) {
+        if (strcmp(buf, "pc") == 0) {
+            printf("PC : "FMT8"\n", cpu->pc);
+        }
+        else if (strcmp(buf, "ra") == 0) {
             printf("Register A: "FMT8"\n", cpu->a);
         } else if (strcmp(buf, "rb") == 0) {
             printf("Register B: "FMT8"\n", cpu->b);
