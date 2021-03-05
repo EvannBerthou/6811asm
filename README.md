@@ -154,12 +154,13 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Ajout du index x,y addressing mode
     - Support des opcode en 2 mots
     - Support des opcodes avec 2 operands (ex: bclr)
+    - Support des operand IMMEDIATE en 16 bits (ex: lds)
     - Pouvoir changer la valeur des ports d'entrée
     - Prise en compte du registre D (double accumulateur)
     - Gestion du stack
     - Calcul du temps d'exécution du programme
     - Ajouter de commandes:
-        - Dump memory <fichier> : Extrait la mémoire entière du programme vers le fichier donné
+        - Dump memory <fichier> : Extrait la mémoire entière du programme vers le fichier donnée
         - Print memory range : afficher la mémoire à partir d'une adresse quelconque
         - Set CCR : Changer les valeurs du CCR
 

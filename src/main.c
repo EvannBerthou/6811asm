@@ -622,6 +622,27 @@ void INST_CMPB_EXT(cpu *cpu) {
     SET_CMP_FLAGS(cpu, b, v);
 }
 
+void INST_LDS_IMM(cpu *cpu) {
+    uint16_t v = NEXT8(cpu);
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->sp = v;
+}
+
+void INST_LDS_DIR(cpu *cpu) {
+    uint16_t v = DIR_WORD(cpu);
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->sp = v;
+}
+
+void INST_LDS_EXT(cpu *cpu) {
+    uint16_t v = EXT_WORD(cpu);
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->sp = v;
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -870,6 +891,16 @@ instruction instructions[] = {
         .codes = {[NONE]=0x0F},
         .func = {[NONE]=INST_SEI},
         .operands = { NONE }
+    },
+    {
+        .names = {"lds"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x8E, [DIRECT]=0x9E,[EXTENDED]=0xBE},
+        .func = {
+            [IMMEDIATE]=INST_LDS_IMM,
+            [DIRECT]=INST_LDS_DIR,
+            [EXTENDED]=INST_LDS_EXT
+        },
+        .operands = { IMMEDIATE, DIRECT, EXTENDED }
     },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
@@ -1317,6 +1348,8 @@ void handle_commands(cpu *cpu) {
             printf("\n");
         } else if (strcmp(buf, "pc") == 0) {
             printf("PC : "FMT8"\n", cpu->pc);
+        } else if (strcmp(buf, "sp") == 0) {
+            printf("SP : "FMT8"\n", cpu->sp);
         } else if (strcmp(buf, "labels") == 0) {
             printf("%d labels loaded\n", cpu->label_count);
             for (int i = 0; i < cpu->label_count; ++i) {
