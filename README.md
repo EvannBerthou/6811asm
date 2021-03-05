@@ -156,8 +156,12 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Support des opcodes avec 2 operands (ex: bclr)
     - Pouvoir changer la valeur des ports d'entrée
     - Prise en compte du registre D (double accumulateur)
-    - Changer la structure d'une ligne pour être sous la forme:
-        [LABEL] opcode [operand] [; commentaire]
+    - Gestion du stack
+    - Calcul du temps d'exécution du programme
+    - Ajouter de commandes:
+        - Dump memory <fichier> : Extrait la mémoire entière du programme vers le fichier donné
+        - Print memory range : afficher la mémoire à partir d'une adresse quelconque
+        - Set CCR : Changer les valeurs du CCR
 
 - Tests
     - Programme de tests afin de tester le programme de tous les côtés
