@@ -22,9 +22,7 @@ typedef enum {
     STOP  = 0x80,
 } flags;
 
-typedef enum {
-    NONE,
-    IMMEDIATE,
+typedef enum { NONE, IMMEDIATE,
     EXTENDED,
     DIRECT,
     INDEXDED_X,
@@ -1091,25 +1089,56 @@ operand_type get_operand_type(const char *str, uint16_t value) {
     return NONE;
 }
 
+uint16_t convert_str_from_base(const char *str, uint8_t base) {
+    char *end;
+    long l = strtol(str, &end, base);
+    if ((l == 0 && str == end) || *end != '\0') {
+        ERROR("%s is not a valid number for this base (%d)", str, base);
+    }
+    if (l > 0xFFFF) {
+        ERROR("%s %s", str, "is > 0xFFFF");
+    }
+    return l;
+}
+
+uint16_t hex_str_to_u16(const char *str) {
+    str += 2; // skips the #$
+    return convert_str_from_base(str, 16);
+}
+
+uint16_t dec_str_to_u16(const char *str) {
+    str += 1; // skips the #
+    return convert_str_from_base(str, 10);
+}
+
+uint16_t bin_str_to_u16(const char *str) {
+    str += 2; // skips the #$
+    return convert_str_from_base(str, 2);
+}
+
 operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
     const directive *directive = get_directive_by_label(str, labels, label_count);
     if (directive != NULL) {
         return (operand) {directive->operand.value, directive->operand.type, 1};
     }
 
-    // Find where the number starts (skips non digit but keeps hex values)
-    const char *number_part = str;
-    while (!isdigit(*number_part) && (*number_part < 'a' || *number_part > 'f')) number_part++;
-    // Convert to a number
-    char *end;
-    long l = strtol(number_part, &end, 16);
-    if (l == 0 && number_part == end) {
-        ERROR("%s %s", "is not a valid hex number", str);
+    uint16_t operand_value;
+    if (str[0] == '#') {
+        if (str[1] == '$') { // Hexadecimal
+            operand_value = hex_str_to_u16(str);
+        } else if (str[1] == '%') { // Binary
+            operand_value = bin_str_to_u16(str);
+        } else if (str[1] >= '0' && str[1] <= '9') { // Decimal
+            operand_value = dec_str_to_u16(str);
+        } else { // In case there is a wrong prefix, like #:, which does not exists
+            ERROR("%s %s", str, "is not a valid operand");
+        }
     }
-    uint16_t operand_value = l & 0xFFFF; // Keep the value below 0xFFFF
+
+    // Convert to a number
     operand_type type = get_operand_type(str, operand_value);
     if (type == NONE) {
-        ERROR("%s `%s` %s", "The operand", str, "is neither a constant or a label");
+        ERROR("The operand `%s` is neither a constant or a label", str, "");
     }
     return (operand) {operand_value, type, 0};
 }

@@ -1,7 +1,7 @@
 START equ $c150
 
     org START
-    lds #FF
+    lds #$FFFFF
 boucle
     lda #1
     bra boucle
