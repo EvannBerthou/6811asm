@@ -126,6 +126,9 @@ typedef struct {
     uint8_t codes[OPERAND_TYPE_COUNT];
     void (*func[OPERAND_TYPE_COUNT]) (cpu *cpu);
     operand_type operands[OPERAND_TYPE_COUNT];
+    // The maximum value an operand in immediate addressing mode can have,
+    // certain isntruction like ldacan go up to 0xFF but others like LDS can go up to 0xFFFF
+    uint16_t immediate_16;
 } instruction;
 
 
@@ -650,7 +653,7 @@ instruction instructions[] = {
             [DIRECT]=INST_LDA_DIR,
             [EXTENDED]=INST_LDA_EXT,
         },
-        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
     {
         .names = {"ldab", "ldb"}, .name_count = 2,
@@ -660,7 +663,7 @@ instruction instructions[] = {
             [DIRECT]=INST_LDB_DIR,
             [EXTENDED]=INST_LDB_EXT,
         },
-        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
     {
         .names = {"staa", "sta"}, .name_count = 2,
@@ -694,7 +697,7 @@ instruction instructions[] = {
             [DIRECT]=INST_ADCA_DIR,
             [EXTENDED]=INST_ADCA_EXT
         },
-        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
     {
         .names = {"adcb"}, .name_count = 1,
@@ -704,7 +707,7 @@ instruction instructions[] = {
             [DIRECT]=INST_ADCB_DIR,
             [EXTENDED]=INST_ADCB_EXT
         },
-        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
     {
         .names = {"adda"}, .name_count = 1,
@@ -714,7 +717,7 @@ instruction instructions[] = {
             [DIRECT]=INST_ADDA_DIR,
             [EXTENDED]=INST_ADDA_EXT
         },
-        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
     {
         .names = {"addb"}, .name_count = 1,
@@ -724,7 +727,7 @@ instruction instructions[] = {
             [DIRECT]=INST_ADDB_DIR,
             [EXTENDED]=INST_ADDB_EXT
         },
-        .operands = { IMMEDIATE, EXTENDED, DIRECT }
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
     {
         .names = {"tab"}, .name_count = 1,
@@ -746,7 +749,8 @@ instruction instructions[] = {
             [DIRECT]=INST_CMPA_DIR,
             [EXTENDED]=INST_CMPA_EXT,
         },
-        .operands = { IMMEDIATE, DIRECT, EXTENDED }
+        .operands = { IMMEDIATE, DIRECT, EXTENDED },
+        .immediate_16 = 1
     },
     {
         .names = {"cmpb"}, .name_count = 1,
@@ -756,7 +760,8 @@ instruction instructions[] = {
             [DIRECT]=INST_CMPB_DIR,
             [EXTENDED]=INST_CMPB_EXT,
         },
-        .operands = { IMMEDIATE, DIRECT, EXTENDED }
+        .operands = { IMMEDIATE, DIRECT, EXTENDED },
+        .immediate_16 = 1
     },
     {
         .names = {"bcc", "bhs"}, .name_count = 2,
@@ -898,7 +903,8 @@ instruction instructions[] = {
             [DIRECT]=INST_LDS_DIR,
             [EXTENDED]=INST_LDS_EXT
         },
-        .operands = { IMMEDIATE, DIRECT, EXTENDED }
+        .operands = { IMMEDIATE, DIRECT, EXTENDED },
+        .immediate_16 = 1
     },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
@@ -1134,11 +1140,12 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
             ERROR("%s %s", str, "is not a valid operand");
         }
     }
+    //TODO: Readd other addressing modes
 
     // Convert to a number
     operand_type type = get_operand_type(str, operand_value);
     if (type == NONE) {
-        ERROR("The operand `%s` is neither a constant or a label", str, "");
+        ERROR("The operand `%s` is neither a constant or a label", str);
     }
     return (operand) {operand_value, type, 0};
 }
@@ -1170,6 +1177,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
     mnemonic result = {0};
     if (need_operand) {
         result.operand = get_operand_value(parts[2], labels, label_count);
+
         if (inst->operands[0] == RELATIVE) {
             uint16_t operand_value = result.operand.value;
             if (result.operand.from_label) {
@@ -1183,6 +1191,9 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
             }
             result.operand.type = RELATIVE;
             result.operand.value = operand_value & 0xFF;
+        }
+        else if (inst->operands[0] == IMMEDIATE && inst->immediate_16 == 0 && result.operand.value > 0xFF) {
+            ERROR("%s instruction can only go up to 0xFF, given value is "FMT16, parts[1], result.operand.value);
         }
         // Checks if the given addressig mode is used by this instruction
         else if (!is_valid_operand_type(inst, result.operand.type)) {
@@ -1199,15 +1210,13 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
 uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     uint8_t written = 0; // Number of bytes written
     cpu->memory[addr + (written++)] = m->opcode;
-    if (m->operand.type != NONE) {
+    if (m->operand.type != NONE && m->operand.type != INHERENT) {
         // Only extended uses 2 bytes for the operand
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
-        if (m->operand.type == EXTENDED) {
+        if (m->operand.value > 0xFF) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
-            cpu->memory[addr + written++] = m->operand.value & 0xFF;
-        } else if (m->operand.type != NONE && m->operand.type != INHERENT) {
-            cpu->memory[addr + written++] = m->operand.value & 0xFF;
         }
+        cpu->memory[addr + written++] = m->operand.value & 0xFF;
     }
     return written;
 }
