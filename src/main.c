@@ -1088,10 +1088,11 @@ instruction * opcode_str_to_hex(const char *str) {
 }
 
 // Returns operand type based on prefix and operand_value
-operand_type get_operand_type(const char *str, uint16_t value) {
+operand_type get_operand_type(const char *str) {
     if (str[0] == '#')                  return IMMEDIATE;
-    if (str[0] == '$' && value <= 0xFF) return DIRECT;
-    if (str[0] == '$' && value >  0xFF) return EXTENDED;
+    if (str[0] == '<' && str[1] == '$') return DIRECT;
+    if (str[0] == '>' && str[1] == '$') return EXTENDED;
+    if (str[0] == '$')                  return EXTENDED;
     return NONE;
 }
 
@@ -1128,8 +1129,9 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
         return (operand) {directive->operand.value, directive->operand.type, 1};
     }
 
+    uint8_t offset = str[0] == '<' || str[0] == '>';
     uint16_t operand_value = 0;
-    if (str[0] == '#') {
+    if (offset == 0 && str[0] == '#') {
         if (str[1] == '$') { // Hexadecimal
             operand_value = hex_str_to_u16(str);
         } else if (str[1] == '%') { // Binary
@@ -1139,14 +1141,17 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
         } else { // In case there is a wrong prefix, like #:, which does not exists
             ERROR("%s %s", str, "is not a valid operand");
         }
-    } else if (str[0] == '$') {
-        operand_value = convert_str_from_base(str + 1, 16);
+    } else if (str[offset] == '$') {
+        operand_value = convert_str_from_base(str + offset + 1, 16);
     } else {
         ERROR("Invalid prefix for operand %s", str);
     }
 
     // Convert to a number
-    operand_type type = get_operand_type(str, operand_value);
+    operand_type type = get_operand_type(str);
+    if (type == DIRECT && operand_value > 0xFF) {
+        ERROR("Direct addressing mode only allows value up to 0xFF, recieved "FMT16, operand_value);
+    }
     if (type == NONE) {
         ERROR("The operand `%s` is neither a constant or a label", str);
     }
