@@ -2,7 +2,7 @@ START equ $c150
 
     org START
     lds #$FFFF
-    ldb $FF
+    ldb #%1000
 boucle
     lda #1
     bra boucle

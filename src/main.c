@@ -1128,7 +1128,7 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
         return (operand) {directive->operand.value, directive->operand.type, 1};
     }
 
-    uint16_t operand_value;
+    uint16_t operand_value = 0;
     if (str[0] == '#') {
         if (str[1] == '$') { // Hexadecimal
             operand_value = hex_str_to_u16(str);
@@ -1139,8 +1139,11 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
         } else { // In case there is a wrong prefix, like #:, which does not exists
             ERROR("%s %s", str, "is not a valid operand");
         }
+    } else if (str[0] == '$') {
+        operand_value = convert_str_from_base(str + 1, 16);
+    } else {
+        ERROR("Invalid prefix for operand %s", str);
     }
-    //TODO: Readd other addressing modes
 
     // Convert to a number
     operand_type type = get_operand_type(str, operand_value);
@@ -1192,7 +1195,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
             result.operand.type = RELATIVE;
             result.operand.value = operand_value & 0xFF;
         }
-        else if (inst->operands[0] == IMMEDIATE && inst->immediate_16 == 0 && result.operand.value > 0xFF) {
+        else if (result.operand.type == IMMEDIATE && inst->immediate_16 == 0 && result.operand.value > 0xFF) {
             ERROR("%s instruction can only go up to 0xFF, given value is "FMT16, parts[1], result.operand.value);
         }
         // Checks if the given addressig mode is used by this instruction
