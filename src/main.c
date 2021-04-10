@@ -1302,9 +1302,9 @@ int load_program(cpu *cpu, const char *file_path) {
         }
     }
 
-    INFO("Loaded %u labels", cpu->label_count);
+    //INFO("Loaded %u labels", cpu->label_count);
 
-    INFO("%s", "First pass done with success");
+    //INFO("%s", "First pass done with success");
     rewind(f);
     addr = 0x0;
     file_line = 0;
@@ -1430,12 +1430,26 @@ void exec_program(cpu *cpu, int step) {
     }
 }
 
+void dump_program(const char *file_name) {
+    cpu c = (cpu) {0};
+    if (!load_program(&c, file_name)) {
+        return;
+    }
+    for (size_t i = 0; i < MAX_MEMORY; ++i) {
+        if (i % 16 == 0 && i != 0) printf("\n");
+        printf(FMT8" ", c.memory[i]);
+    }
+}
 
 int main(int argc, char **argv) {
     int step = 0;
     for (int i = 0; i < argc; ++i) {
         if (strcmp(argv[i], "step") == 0) {
             step = 1;
+        }
+        else if (strcmp(argv[i], "dump") == 0) {
+            dump_program(file_name);
+            exit(1);
         }
     }
 
@@ -1448,11 +1462,10 @@ int main(int argc, char **argv) {
     if (!load_program(&c, file_name)) {
         return 0;
     }
-    INFO("%s", "Loading sucess");
 
+    INFO("%s", "Loading sucess");
     INFO("%s", "Execution program");
     exec_program(&c, step);
     INFO("%s", "Execution ended");
-    //print_cpu_state(&c);
 }
 
