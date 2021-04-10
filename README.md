@@ -18,11 +18,9 @@
     $1040 - $F7FF: Non utilisé
     $F800 - $FFFF: EEPROM
 
-
 La ram est utilisée afin de stocker des informations durant le déroulement du programme (256 bytes).
 
 Les registres spéciaux servent à controller et définir le fonctionnements des ports.
-
 
 Les parties non utilisés servent à stocker le programme en lui-même.
 
@@ -41,26 +39,25 @@ Une instruction est composée d'un opcode et optionnellement d'un operand.
 Il existe différent type d'operand :
 
 - Immediate (**#**) : définie une constante.
-Exemple : lda #0 -> charge la valeur 0 dans le registre A. La taille maximum de l'operand dépend de la taille du registre (acc a : 8 bits, acc x : 16 bits).
-- Extended (**$**) Utilise 2 bytes afin de pointer vers une adresse mémoire qui contient l'operand.
+Exemple : lda #0 -> charge la valeur 0 dans le registre A. La taille maximum de l'operand dépend de la taille du registre (acc a : 8 bits, acc x : 16 bits). La valeur est interprétée différement en fonction du prefix:
+    - #$ -> Hex
+    - #% -> Binaire
+    - #  -> Decimal
+- Extended (**$**) Utilise 2 bytes afin de pointer vers une adresse mémoire, est utilisable sur la plage 0x0000 - 0xFFFF.
 - Direct (**$**) : Récupère uniquement le byte inférieurs (0x00 est assumé pour le byte supérieur) afin d'accéder à la zero-page(ou direct page) de la mémoire (0x00 - 0xFF). Permet d'utiliser un byte de moins de mémoire ce qui réduit d'un cycle l'accès.
 - Indexed (indx, indy) :
 - Inherent : L'operand est déjà connu par le cpu, c'est par exemple le cas de l'instruction LDA, qui pointe déjà vers l'accumulateur A.
-r
-- Relative : Est uniquement utilisé par les instructions de branches. Est 1 seul byte signe (--127 à +127) et définie une distance relative vers laquelle le programme doit aller. Par exemple un **BRA** $10 avance de 0x10 instructions. Si l'operand est 0x00, alors le saut on ne saute pas et on passe à la prochaine instruction.
+- Relative : Est uniquement utilisé par les instructions de branches. Est 1 seul byte signe (-127 à +127) et définie une distance relative vers laquelle le programme doit aller. Par exemple un **BRA** $10 avance de 0x10 instructions. Si l'operand est 0x00, alors le saut on ne saute pas et on passe à la prochaine instruction.
 
 Un opcode est différent en fonction de mode d'adressage de son operand.
-
-Par exemple un ```LDA #4``` donnera ```86 04``` mais un ```LDA $5``` donnera ```96 05```.
 
 ### Directives
 Il est possible de donner des directives lors de la compilation. Ces instructions ne seront pas exécutées au cours du programme mais seulement lors de l'assemblage.
 
 [optionnel], <obligatoire>
 
-- ORG <expression> : Permet de définir l'adresse de départ du programme.
+- ORG <expression> : Permet de définir l'adresse de départ du code qui suit.
 - LABEL EQU <expression> : Permet de définir des constantes aux programmes. Même principe que les defines en C.
-    Le caractères ```*``` fait référence au PC courant. C'est-à-dire que ```*``` fait référence à la ligne en cours d'exécution.
 - [Label] RMB <expression> : Permet de faire avancer le PC de <expression> bytes.
 - [LABEL] FCC <séparateur><string><séparateur> : Permet de définir des chaines de caractères constantes. Les séparateurs doivent être égaux. Exemple : FFC "Hello, world".
 - ... Il en existe d'autres mais pas encore implémentées.
