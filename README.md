@@ -158,11 +158,11 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Gestion du stack
     - Calcul du temps d'exécution du programme
     - Ajouter de commandes:
-        - Dump memory <fichier> : Extrait la mémoire entière du programme vers le fichier donnée
         - Print memory range : afficher la mémoire à partir d'une adresse quelconque
         - Set CCR : Changer les valeurs du CCR
     - Arguments:
         - smart direct : détecter automatiquement s'il y a un adressage direct
+        - --help
 
 - Tests
     - Programme de tests afin de tester le programme de tous les côtés

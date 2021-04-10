@@ -1467,21 +1467,25 @@ void handle_args(args *args, int argc, char **argv) {
     argc--;
     argv++;
     for (int i = 0; i < argc; ++i) {
-        if (strcmp(argv[i], "-step") == 0) {
+        if (strcmp(argv[i], "--step") == 0 || strcmp(argv[i], "-s") == 0) {
             args->step = 1;
         }
-        else if (strcmp(argv[i], "-dump") == 0) {
+        else if (strcmp(argv[i], "--dump") == 0 || strcmp(argv[i], "-d") == 0) {
             args->dump = 1;
             if (i + 1 < argc && argv[i + 1][0] != '-') {
                 args->dump_path = argv[i + 1];
                 ++i;
             }
         }
-        else if (strcmp(argv[i], "-readable") == 0) {
+        else if (strcmp(argv[i], "--readable") == 0 || strcmp(argv[i], "-r") == 0) {
             args->readable_dump = 1;
         } else {
             fprintf(stderr, "Unknow argument `%s`\n", argv[i]);
         }
+    }
+
+    if (args->readable_dump && !args->dump) {
+        INFO("%s", "--readable argument ignored as you need to use the --dump too.");
     }
 }
 
