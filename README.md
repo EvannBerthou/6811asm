@@ -165,4 +165,5 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - --help
 
 - Tests
-    - Programme de tests afin de tester le programme de tous les côtés
+    - Vérifier le parsing de toutes les instructions
+    - Ecrire des programmes et vérifier que le résultat obtenu est le bon
