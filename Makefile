@@ -1,15 +1,21 @@
 CC=gcc
 CFLAGS=-Wall -Werror -Wextra -ggdb -pedantic-errors -std=c11
-SRC=$(wildcard src/*.c)
+SRC=$(shell find src/ ! -name "main.c" -name "*.c")
 OBJ=$(SRC:.c=.o)
 
 all: main
+.PHONY: tests
 
-main: src/main.c
-	$(CC) $(CFLAGS) $^ -o run -Iincludes
+main: src/main.c $(SRC)
+	$(CC) $(CFLAGS) $^ -o run
 
 %.o: %.c
-	$(CC) $(CFLAGS) -o $@ $< -Iincludes
+	$(CC) $(CFLAGS) -o $@ $<
+
+tests: tests/main.c $(SRC)
+	@$(CC) $(CFLAGS) $^ -o run_tests
+	@-./run_tests
+	@rm -f run_tests
 
 clean:
 	rm -f *.o
