@@ -138,7 +138,7 @@ typedef struct {
     void (*func[OPERAND_TYPE_COUNT]) (cpu *cpu);
     operand_type operands[OPERAND_TYPE_COUNT];
     // The maximum value an operand in immediate addressing mode can have,
-    // certain isntruction like ldacan go up to 0xFF but others like LDS can go up to 0xFFFF
+    // certain isntruction like 'LDA' can go up to 0xFF but others like 'LDS' can go up to 0xFFFF
     uint16_t immediate_16;
 } instruction;
 
@@ -1135,7 +1135,11 @@ uint16_t bin_str_to_u16(const char *str) {
 }
 
 operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
-    const directive *directive = get_directive_by_label(str, labels, label_count);
+    directive *directive = NULL;
+    if (labels) {
+        directive = get_directive_by_label(str, labels, label_count);
+    }
+
     if (directive != NULL) {
         return (operand) {directive->operand.value, directive->operand.type, 1};
     }

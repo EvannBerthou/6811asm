@@ -18,7 +18,6 @@ int test_n = 0;
 
 #define ASSERT(x) test_n++; if (!(x)) { printf(TEST_FAILED); printf("    Expected: TRUE. Recieved: FALSE\n"); } else { printf(TEST_SUCCESS);}
 
-
 #define CRIT_ASSERT_EQ(x,y) test_n++; if ((x) != (y)) { printf(CRIT_TEST_FAILED); printf("    Expected: '%d'. Recieved: '%d'\n", x,y); exit(0);} else { printf(TEST_SUCCESS);}
 
 #define CRIT_ASSERT_NEQ(x,y) test_n++; if ((x) == (y)) { printf(CRIT_TEST_FAILED); printf("    Expected value different to '%d'\n", x); exit(0);} else { printf(TEST_SUCCESS);}
