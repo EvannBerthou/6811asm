@@ -186,6 +186,12 @@ uint8_t STACK_POP(cpu *cpu) {
     return cpu->memory[cpu->sp];
 }
 
+void STACK_PUSH16(cpu *cpu, uint16_t v) {
+    cpu->memory[cpu->sp] = v & 0xFF;
+    cpu->sp--;
+    cpu->memory[cpu->sp] = (v >> 8) & 0xFF;
+}
+
 void SET_FLAGS(cpu *cpu, int16_t result, uint8_t flags) {
     if (flags & CARRY) {
         cpu->c = (result > 0xFF) || (result < 0);
@@ -640,7 +646,7 @@ void INST_CMPB_EXT(cpu *cpu) {
 }
 
 void INST_LDS_IMM(cpu *cpu) {
-    uint16_t v = NEXT8(cpu);
+    uint16_t v = NEXT16(cpu);
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->sp = v;
@@ -665,6 +671,18 @@ void INST_RTS_INH(cpu *cpu) {
     uint8_t s2 = STACK_POP(cpu);
     uint16_t ret_addr = (s1 << 8) | s2;
     cpu->pc = ret_addr;
+}
+
+void INST_JSR_DIR(cpu *cpu) {
+    uint8_t sub_addr = DIR_WORD(cpu);
+    STACK_PUSH16(cpu, cpu->pc);
+    cpu->pc = sub_addr;
+}
+
+void INST_JSR_EXT(cpu *cpu) {
+    uint16_t sub_addr = NEXT16(cpu);
+    STACK_PUSH16(cpu, cpu->pc);
+    cpu->pc = sub_addr;
 }
 
 instruction instructions[] = {
@@ -934,6 +952,15 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x39},
         .func = { [INHERENT]=INST_RTS_INH},
         .operands = { INHERENT },
+    },
+    {
+        .names = {"jsr"}, .name_count = 1,
+        .codes = {[DIRECT]=0x9D, [EXTENDED]=0xBD},
+        .func = {
+            [DIRECT]=INST_JSR_DIR,
+            [EXTENDED]=INST_JSR_EXT,
+        },
+        .operands = { DIRECT, EXTENDED},
     },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
@@ -1420,15 +1447,11 @@ void handle_commands(cpu *cpu) {
             if (cpu->pc - range < 0) range = cpu->pc; // Avoid going before 0x0000
             print_memory_range(cpu, cpu->pc - range, range);
         } else if (strcmp(buf, "status") == 0) {
-            printf("Status : ");
-            for (int i = 0; i < 8; ++i) {
-                printf("%d", cpu->status >> i & 0x1);
-            }
-            printf("\n");
+            print_cpu_state(cpu);
         } else if (strcmp(buf, "pc") == 0) {
             printf("PC : "FMT8"\n", cpu->pc);
         } else if (strcmp(buf, "sp") == 0) {
-            printf("SP : "FMT8"\n", cpu->sp);
+            printf("SP : "FMT16"\n", cpu->sp);
         } else if (strcmp(buf, "labels") == 0) {
             printf("%d labels loaded\n", cpu->label_count);
             for (int i = 0; i < cpu->label_count; ++i) {
