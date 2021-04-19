@@ -181,6 +181,11 @@ uint8_t EXT_WORD(cpu *cpu) {
     return cpu->memory[NEXT16(cpu)];
 }
 
+uint8_t STACK_POP(cpu *cpu) {
+    cpu->sp--;
+    return cpu->memory[cpu->sp];
+}
+
 void SET_FLAGS(cpu *cpu, int16_t result, uint8_t flags) {
     if (flags & CARRY) {
         cpu->c = (result > 0xFF) || (result < 0);
@@ -655,6 +660,13 @@ void INST_LDS_EXT(cpu *cpu) {
     cpu->sp = v;
 }
 
+void INST_RTS_INH(cpu *cpu) {
+    uint8_t s1 = STACK_POP(cpu);
+    uint8_t s2 = STACK_POP(cpu);
+    uint16_t ret_addr = (s1 << 8) | s2;
+    cpu->pc = ret_addr;
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -916,6 +928,12 @@ instruction instructions[] = {
         },
         .operands = { IMMEDIATE, DIRECT, EXTENDED },
         .immediate_16 = 1
+    },
+    {
+        .names = {"rts"}, .name_count = 1,
+        .codes = {[INHERENT]=0x39},
+        .func = { [INHERENT]=INST_RTS_INH},
+        .operands = { INHERENT },
     },
 };
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
