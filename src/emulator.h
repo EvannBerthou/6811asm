@@ -181,16 +181,25 @@ uint8_t EXT_WORD(cpu *cpu) {
     return cpu->memory[NEXT16(cpu)];
 }
 
-uint8_t STACK_POP(cpu *cpu) {
+uint8_t STACK_POP8(cpu *cpu) {
     cpu->sp++;
     return cpu->memory[cpu->sp];
 }
 
-void STACK_PUSH16(cpu *cpu, uint16_t v) {
+uint16_t STACK_POP16(cpu *cpu) {
+    uint8_t v1 = STACK_POP8(cpu);
+    uint8_t v2 = STACK_POP8(cpu);
+    return (v1 << 8) | v2;
+}
+
+void STACK_PUSH8(cpu *cpu, uint8_t v) {
     cpu->memory[cpu->sp] = v & 0xFF;
     cpu->sp--;
-    cpu->memory[cpu->sp] = (v >> 8) & 0xFF;
-    cpu->sp--;
+}
+
+void STACK_PUSH16(cpu *cpu, uint16_t v) {
+    STACK_PUSH8(cpu, v & 0xFF);
+    STACK_PUSH8(cpu, (v >> 8) & 0xFF);
 }
 
 void SET_FLAGS(cpu *cpu, int16_t result, uint8_t flags) {
@@ -668,9 +677,7 @@ void INST_LDS_EXT(cpu *cpu) {
 }
 
 void INST_RTS_INH(cpu *cpu) {
-    uint8_t s1 = STACK_POP(cpu);
-    uint8_t s2 = STACK_POP(cpu);
-    uint16_t ret_addr = (s1 << 8) | s2;
+    uint16_t ret_addr = STACK_POP16(cpu);
     cpu->pc = ret_addr;
 }
 
@@ -684,6 +691,36 @@ void INST_JSR_EXT(cpu *cpu) {
     uint16_t sub_addr = NEXT16(cpu);
     STACK_PUSH16(cpu, cpu->pc);
     cpu->pc = sub_addr;
+}
+
+void INST_PSHA_INH(cpu *cpu) {
+    uint8_t a = cpu->a;
+    STACK_PUSH8(cpu, a);
+}
+
+void INST_PSHB_INH(cpu *cpu) {
+    uint8_t b = cpu->b;
+    STACK_PUSH8(cpu, b);
+}
+
+void INST_PSHX_INH(cpu *cpu) {
+    uint8_t x = cpu->x;
+    STACK_PUSH16(cpu, x);
+}
+
+void INST_PULA_INH(cpu *cpu) {
+    uint8_t v = STACK_POP8(cpu);
+    cpu->a = v;
+}
+
+void INST_PULB_INH(cpu *cpu) {
+    uint8_t v = STACK_POP8(cpu);
+    cpu->b = v;
+}
+
+void INST_PULX_INH(cpu *cpu) {
+    uint16_t v = STACK_POP16(cpu);
+    cpu->x = v;
 }
 
 instruction instructions[] = {
@@ -963,7 +1000,44 @@ instruction instructions[] = {
         },
         .operands = { DIRECT, EXTENDED},
     },
+    {
+        .names = {"psha"}, .name_count = 1,
+        .codes = {[INHERENT]=0x36},
+        .func = { [INHERENT]=INST_PSHA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pshb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x37},
+        .func = { [INHERENT]=INST_PSHB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pshx"}, .name_count = 1,
+        .codes = {[INHERENT]=0x3C},
+        .func = { [INHERENT]=INST_PSHX_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pula"}, .name_count = 1,
+        .codes = {[INHERENT]=0x32},
+        .func = { [INHERENT]=INST_PULA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pulb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x33},
+        .func = { [INHERENT]=INST_PULB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pulx"}, .name_count = 1,
+        .codes = {[INHERENT]=0x38},
+        .func = { [INHERENT]=INST_PULX_INH},
+        .operands = { INHERENT },
+    },
 };
+
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
 
