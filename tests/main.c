@@ -39,6 +39,11 @@ int main() {
         mnemonic e4 = {0x96, {0xFF, EXTENDED, 0}};
         ASSERT(!cmp_mnemonic(&m4, &e4));
 
+        char s5[] = " rts";
+        mnemonic m5 = line_to_mnemonic(s5, NULL, 0, 0);
+        mnemonic e5 = {0x39, {0, INHERENT, 0}};
+        ASSERT(cmp_mnemonic(&m5, &e5));
+
     }
 
     return 0;

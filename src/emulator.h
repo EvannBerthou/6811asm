@@ -181,6 +181,27 @@ uint8_t EXT_WORD(cpu *cpu) {
     return cpu->memory[NEXT16(cpu)];
 }
 
+uint8_t STACK_POP8(cpu *cpu) {
+    cpu->sp++;
+    return cpu->memory[cpu->sp];
+}
+
+uint16_t STACK_POP16(cpu *cpu) {
+    uint8_t v1 = STACK_POP8(cpu);
+    uint8_t v2 = STACK_POP8(cpu);
+    return (v1 << 8) | v2;
+}
+
+void STACK_PUSH8(cpu *cpu, uint8_t v) {
+    cpu->memory[cpu->sp] = v & 0xFF;
+    cpu->sp--;
+}
+
+void STACK_PUSH16(cpu *cpu, uint16_t v) {
+    STACK_PUSH8(cpu, v & 0xFF);
+    STACK_PUSH8(cpu, (v >> 8) & 0xFF);
+}
+
 void SET_FLAGS(cpu *cpu, int16_t result, uint8_t flags) {
     if (flags & CARRY) {
         cpu->c = (result > 0xFF) || (result < 0);
@@ -635,7 +656,7 @@ void INST_CMPB_EXT(cpu *cpu) {
 }
 
 void INST_LDS_IMM(cpu *cpu) {
-    uint16_t v = NEXT8(cpu);
+    uint16_t v = NEXT16(cpu);
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->sp = v;
@@ -653,6 +674,53 @@ void INST_LDS_EXT(cpu *cpu) {
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->sp = v;
+}
+
+void INST_RTS_INH(cpu *cpu) {
+    uint16_t ret_addr = STACK_POP16(cpu);
+    cpu->pc = ret_addr;
+}
+
+void INST_JSR_DIR(cpu *cpu) {
+    uint8_t sub_addr = DIR_WORD(cpu);
+    STACK_PUSH16(cpu, cpu->pc);
+    cpu->pc = sub_addr;
+}
+
+void INST_JSR_EXT(cpu *cpu) {
+    uint16_t sub_addr = NEXT16(cpu);
+    STACK_PUSH16(cpu, cpu->pc);
+    cpu->pc = sub_addr;
+}
+
+void INST_PSHA_INH(cpu *cpu) {
+    uint8_t a = cpu->a;
+    STACK_PUSH8(cpu, a);
+}
+
+void INST_PSHB_INH(cpu *cpu) {
+    uint8_t b = cpu->b;
+    STACK_PUSH8(cpu, b);
+}
+
+void INST_PSHX_INH(cpu *cpu) {
+    uint8_t x = cpu->x;
+    STACK_PUSH16(cpu, x);
+}
+
+void INST_PULA_INH(cpu *cpu) {
+    uint8_t v = STACK_POP8(cpu);
+    cpu->a = v;
+}
+
+void INST_PULB_INH(cpu *cpu) {
+    uint8_t v = STACK_POP8(cpu);
+    cpu->b = v;
+}
+
+void INST_PULX_INH(cpu *cpu) {
+    uint16_t v = STACK_POP16(cpu);
+    cpu->x = v;
 }
 
 instruction instructions[] = {
@@ -917,7 +985,59 @@ instruction instructions[] = {
         .operands = { IMMEDIATE, DIRECT, EXTENDED },
         .immediate_16 = 1
     },
+    {
+        .names = {"rts"}, .name_count = 1,
+        .codes = {[INHERENT]=0x39},
+        .func = { [INHERENT]=INST_RTS_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"jsr"}, .name_count = 1,
+        .codes = {[DIRECT]=0x9D, [EXTENDED]=0xBD},
+        .func = {
+            [DIRECT]=INST_JSR_DIR,
+            [EXTENDED]=INST_JSR_EXT,
+        },
+        .operands = { DIRECT, EXTENDED},
+    },
+    {
+        .names = {"psha"}, .name_count = 1,
+        .codes = {[INHERENT]=0x36},
+        .func = { [INHERENT]=INST_PSHA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pshb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x37},
+        .func = { [INHERENT]=INST_PSHB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pshx"}, .name_count = 1,
+        .codes = {[INHERENT]=0x3C},
+        .func = { [INHERENT]=INST_PSHX_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pula"}, .name_count = 1,
+        .codes = {[INHERENT]=0x32},
+        .func = { [INHERENT]=INST_PULA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pulb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x33},
+        .func = { [INHERENT]=INST_PULB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"pulx"}, .name_count = 1,
+        .codes = {[INHERENT]=0x38},
+        .func = { [INHERENT]=INST_PULX_INH},
+        .operands = { INHERENT },
+    },
 };
+
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
 
 
@@ -1200,11 +1320,10 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
     mnemonic result = {0};
     if (need_operand) {
         result.operand = get_operand_value(parts[2], labels, label_count);
-
         if (inst->operands[0] == RELATIVE) {
             uint16_t operand_value = result.operand.value;
             if (result.operand.from_label) {
-                int8_t offset = result.operand.value - addr - 2;
+                int8_t offset = result.operand.value - addr - 1;
                 operand_value = offset;
             } else {
                 if (result.operand.value > 0xFF) {
@@ -1234,7 +1353,6 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     uint8_t written = 0; // Number of bytes written
     cpu->memory[addr + (written++)] = m->opcode;
     if (m->operand.type != NONE && m->operand.type != INHERENT) {
-        // Only extended uses 2 bytes for the operand
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
         if (m->operand.value > 0xFF) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
@@ -1312,8 +1430,16 @@ int load_program(cpu *cpu, const char *file_path) {
             if (inst == NULL) { continue; }
 
             addr++;
-            uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
-            if (need_operand) addr++;
+            for (uint8_t i = 0; i < OPERAND_TYPE_COUNT; ++i) {
+                if (inst->operands[i] == DIRECT || (inst->operands[i] == IMMEDIATE && !inst->immediate_16)) {
+                    addr += 1;
+                    break;
+                }
+                if (inst->operands[i] == EXTENDED || (inst->operands[i] == IMMEDIATE && inst->immediate_16)) {
+                    addr += 2;
+                    break;
+                }
+            }
         }
     }
 
@@ -1402,15 +1528,11 @@ void handle_commands(cpu *cpu) {
             if (cpu->pc - range < 0) range = cpu->pc; // Avoid going before 0x0000
             print_memory_range(cpu, cpu->pc - range, range);
         } else if (strcmp(buf, "status") == 0) {
-            printf("Status : ");
-            for (int i = 0; i < 8; ++i) {
-                printf("%d", cpu->status >> i & 0x1);
-            }
-            printf("\n");
+            print_cpu_state(cpu);
         } else if (strcmp(buf, "pc") == 0) {
             printf("PC : "FMT8"\n", cpu->pc);
         } else if (strcmp(buf, "sp") == 0) {
-            printf("SP : "FMT8"\n", cpu->sp);
+            printf("SP : "FMT16"\n", cpu->sp);
         } else if (strcmp(buf, "labels") == 0) {
             printf("%d labels loaded\n", cpu->label_count);
             for (int i = 0; i < cpu->label_count; ++i) {

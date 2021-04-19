@@ -1,8 +1,18 @@
 START equ $c150
 
     org START
-    lds >$FFFF
-    ldb #%1000
+    lds #$FFFF
+    lda #$FF
+    jsr f
+    ldb #22
 boucle
-    lda #1
     bra boucle
+
+f
+    psha
+    lda #$00
+    lda #$00
+    lda #$00
+    lda #$00
+    pula
+    rts
