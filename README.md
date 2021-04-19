@@ -99,7 +99,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - EOR
         - FDIV
         - IDIV
-        - INC
         - INS
         - INX
         - INY
