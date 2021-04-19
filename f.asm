@@ -4,6 +4,7 @@ START equ $c150
     lds #$FFFF
     lda #$FF
     jsr f
+    ldb #15
 boucle
     bra boucle
 

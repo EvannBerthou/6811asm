@@ -182,7 +182,7 @@ uint8_t EXT_WORD(cpu *cpu) {
 }
 
 uint8_t STACK_POP(cpu *cpu) {
-    cpu->sp--;
+    cpu->sp++;
     return cpu->memory[cpu->sp];
 }
 
@@ -190,6 +190,7 @@ void STACK_PUSH16(cpu *cpu, uint16_t v) {
     cpu->memory[cpu->sp] = v & 0xFF;
     cpu->sp--;
     cpu->memory[cpu->sp] = (v >> 8) & 0xFF;
+    cpu->sp--;
 }
 
 void SET_FLAGS(cpu *cpu, int16_t result, uint8_t flags) {
@@ -1245,11 +1246,10 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
     mnemonic result = {0};
     if (need_operand) {
         result.operand = get_operand_value(parts[2], labels, label_count);
-
         if (inst->operands[0] == RELATIVE) {
             uint16_t operand_value = result.operand.value;
             if (result.operand.from_label) {
-                int8_t offset = result.operand.value - addr - 2;
+                int8_t offset = result.operand.value - addr - 1;
                 operand_value = offset;
             } else {
                 if (result.operand.value > 0xFF) {
@@ -1279,7 +1279,6 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     uint8_t written = 0; // Number of bytes written
     cpu->memory[addr + (written++)] = m->opcode;
     if (m->operand.type != NONE && m->operand.type != INHERENT) {
-        // Only extended uses 2 bytes for the operand
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
         if (m->operand.value > 0xFF) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
@@ -1357,8 +1356,16 @@ int load_program(cpu *cpu, const char *file_path) {
             if (inst == NULL) { continue; }
 
             addr++;
-            uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
-            if (need_operand) addr++;
+            for (uint8_t i = 0; i < OPERAND_TYPE_COUNT; ++i) {
+                if (inst->operands[i] == DIRECT || (inst->operands[i] == IMMEDIATE && !inst->immediate_16)) {
+                    addr += 1;
+                    break;
+                }
+                if (inst->operands[i] == EXTENDED || (inst->operands[i] == IMMEDIATE && inst->immediate_16)) {
+                    addr += 2;
+                    break;
+                }
+            }
         }
     }
 
