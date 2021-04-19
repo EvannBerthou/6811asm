@@ -104,9 +104,7 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - INX
         - INY
         - JMP
-        - JSR
         - LDD
-        - LDS
         - LDX
         - LDY
         - LSL
@@ -116,16 +114,11 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - MUL
         - NEG
         - ORA
-        - PSH
-        - PSHX
-        - PSHY
-        - PUL
-        - PULX
-        - PULY
+        - PSHY (Requires 2 opcodes)
+        - PULY (Requires 2 opcodes)
         - ROL
         - ROR
         - RTI
-        - RTS
         - SBA
         - SBC
         - STD
@@ -148,7 +141,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - XGDX
         - XGDY
     - Interrupts
-    - Subroutines
     - Half carry
     - Ajout du index x,y addressing mode
     - Support des opcode en 2 mots
@@ -161,7 +153,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - Print memory range : afficher la mémoire à partir d'une adresse quelconque
         - Set CCR : Changer les valeurs du CCR
     - Arguments:
-        - smart direct : détecter automatiquement s'il y a un adressage direct
         - --help
 
 - Tests

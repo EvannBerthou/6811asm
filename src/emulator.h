@@ -723,6 +723,18 @@ void INST_PULX_INH(cpu *cpu) {
     cpu->x = v;
 }
 
+void INST_INCA_INH(cpu *cpu) {
+    int16_t result = cpu->a + 1;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, result, OFLOW | ZERO | NEG);
+}
+
+void INST_INCB_INH(cpu *cpu) {
+    int16_t result = cpu->b + 1;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, result, OFLOW | ZERO | NEG);
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1034,6 +1046,18 @@ instruction instructions[] = {
         .names = {"pulx"}, .name_count = 1,
         .codes = {[INHERENT]=0x38},
         .func = { [INHERENT]=INST_PULX_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"inca"}, .name_count = 1,
+        .codes = {[INHERENT]=0x4C},
+        .func = { [INHERENT]=INST_INCA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"incb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x5C},
+        .func = { [INHERENT]=INST_INCB_INH},
         .operands = { INHERENT },
     },
 };

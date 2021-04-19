@@ -2,7 +2,8 @@ START equ $c150
 
     org START
     lds #$FFFF
-    lda #$FF
+    lda #$01
+    inca
     jsr f
     ldb #22
 boucle
