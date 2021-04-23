@@ -184,4 +184,5 @@ int main(int argc, char **argv) {
             exec_program(&c);
         }
     }
+    free_cpu(&c);
 }

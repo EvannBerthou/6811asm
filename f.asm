@@ -1,12 +1,10 @@
-START equ $c150
-
-    org START
+START equ $C015
+    org $c015
     lds #$FFFF
     lda #$01
     inca
     jsr f
     ldb #22
-    addb $50
 
 f
     psha

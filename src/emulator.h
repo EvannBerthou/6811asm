@@ -1058,6 +1058,12 @@ instruction instructions[] = {
 *           Utils            *
 *****************************/
 
+void free_cpu(cpu *cpu) {
+    for (uint8_t i = 0; i < cpu->label_count; ++i) {
+        free((void *)cpu->labels[i].label);
+    }
+}
+
 void add_instructions_func() {
     memset(instr_func, 0, 0x100 * sizeof(void*));
     for (uint8_t i = 0; i < INSTRUCTION_COUNT; ++i) {
@@ -1087,8 +1093,9 @@ const char *strdup(const char *base) {
     size_t len = strlen(base);
     char *str = malloc(len + 1 * sizeof(char));
     if (str == NULL) {
-        ERROR("%s", "malloc");
+        ERROR("%s", "calloc");
     }
+    str[len] = '\0';
     return memcpy(str, base, len);
 }
 
@@ -1421,6 +1428,7 @@ void load_program(cpu *cpu, const char *file_path) {
             d.operand.value = addr;
             cpu->labels[cpu->label_count++] = d;
         }
+
         if (d.opcode_str != NULL) {
             instruction *inst = opcode_str_to_hex(d.opcode_str);
             if (inst == NULL) { continue; } // Unknow instruction
@@ -1467,6 +1475,7 @@ void load_program(cpu *cpu, const char *file_path) {
                     cpu->pc = addr;
                 }
             }
+            free((void*) d.label);
             continue;
         }
         mnemonic m = line_to_mnemonic(buf, cpu->labels, cpu->label_count, addr);
@@ -1475,6 +1484,7 @@ void load_program(cpu *cpu, const char *file_path) {
         }
         addr += add_mnemonic_to_memory(cpu, &m, addr);
     }
+    fclose(f);
 }
 
 void exec_program(cpu *cpu) {
