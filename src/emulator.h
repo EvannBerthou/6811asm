@@ -824,6 +824,28 @@ void INST_INCB_INH(cpu *cpu) {
     SET_FLAGS(cpu, result, OFLOW | ZERO | NEG);
 }
 
+void INST_NEG_EXT(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    uint8_t v = cpu->memory[addr];
+    v = -v;
+    cpu->memory[addr] = v;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_NEGA_INH(cpu *cpu) {
+    uint8_t v = cpu->a;
+    v = -v;
+    cpu->a = v;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_NEGB_INH(cpu *cpu) {
+    uint8_t v = cpu->b;
+    v = -v;
+    cpu->b = v;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1196,6 +1218,24 @@ instruction instructions[] = {
         .names = {"incb"}, .name_count = 1,
         .codes = {[INHERENT]=0x5C},
         .func = { [INHERENT]=INST_INCB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"neg"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x70},
+        .func = { [EXTENDED]=INST_NEG_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"nega"}, .name_count = 1,
+        .codes = {[INHERENT]=0x40},
+        .func = { [INHERENT]=INST_NEGA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"nega"}, .name_count = 1,
+        .codes = {[INHERENT]=0x50},
+        .func = { [INHERENT]=INST_NEGB_INH},
         .operands = { INHERENT },
     },
 };

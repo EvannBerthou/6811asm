@@ -1,13 +1,11 @@
 START equ $C015
 
     org START
-    lda #1
+    lda #$10
     sta $FF
-    als $FF
-    als $FF
-    als $FF
-    als $FF
+    neg $FF
     lda $FF
+    nega
 
 
 boucle
