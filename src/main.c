@@ -1,3 +1,4 @@
+#define EMULATOR_IMPLEMENTATION
 #include "emulator.h"
 
 typedef struct {

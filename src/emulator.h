@@ -1,3 +1,6 @@
+#ifndef EMULATOR_H
+#define EMULATOR_H
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -12,17 +15,6 @@
 #define FMT16 "0x%04x"
 
 typedef enum {
-    CARRY = 0x1,
-    OFLOW = 0x2,
-    ZERO  = 0x4,
-    NEG   = 0x8,
-    IRQ   = 0x10,
-    HALFC = 0x20,
-    XIRQ  = 0x40,
-    STOP  = 0x80,
-} flags;
-
-typedef enum {
     NONE,
     IMMEDIATE,
     EXTENDED,
@@ -34,6 +26,12 @@ typedef enum {
     OPERAND_TYPE_COUNT
 } operand_type;
 
+typedef struct {
+    uint16_t value;
+    operand_type type;
+    uint8_t from_label;
+} operand;
+
 typedef enum {
     ORG,
     CONSTANT,
@@ -44,50 +42,12 @@ typedef enum {
     DIRECTIVE_TYPE_COUNT
 } directive_type;
 
-typedef enum {
-    PORTA,
-    PORTB,
-    PORTC,
-    PORTD,
-    PORTE,
-    PORTF,
-    PORTG
-} ports;
-
-typedef enum {
-    PORTA_ADDR = 0x1000,
-    DDRA = 0x1001,
-    PORTG_ADDR = 0x1002,
-    DDRG = 0x1003,
-    PORTB_ADDR = 0x1004,
-    PORTF_ADDR = 0x1005,
-    PORTC_ADDR = 0x1006,
-    DDRC = 0x1007,
-    PORTD_ADDR = 0x1008,
-    DDRD = 0x1009,
-    PORTE_ADDR = 0x100a,
-} ports_addr;
-
-typedef struct {
-    uint16_t value;
-    operand_type type;
-    uint8_t from_label;
-} operand;
-
-typedef struct {
-    uint8_t opcode;
-    operand operand;
-} mnemonic;
-
 typedef struct {
     const char *label;
     const char *opcode_str;
     operand operand;
     directive_type type;
 } directive;
-
-const char *directives_name[] = { "org", "equ" };
-#define DIRECTIVE_COUNT ((uint8_t)(sizeof(directives_name) / sizeof(directives_name[0])))
 
 typedef struct {
     union {
@@ -122,6 +82,59 @@ typedef struct {
     uint8_t label_count;
 } cpu;
 
+#endif // EMUALTOR_H
+
+#ifdef EMULATOR_IMPLEMENTATION
+
+#define ERROR(f_, ...) do {\
+    printf("[ERROR] l.%u: "f_".\n", file_line, __VA_ARGS__); \
+    exit(1); \
+} while (0)
+
+#define INFO(f_, ...) printf("[INFO] "f_"\n", __VA_ARGS__)
+
+static uint32_t file_line = 0;
+
+typedef enum {
+    CARRY = 0x1,
+    OFLOW = 0x2,
+    ZERO  = 0x4,
+    NEG   = 0x8,
+    IRQ   = 0x10,
+    HALFC = 0x20,
+    XIRQ  = 0x40,
+    STOP  = 0x80,
+} flags;
+
+typedef enum {
+    PORTA,
+    PORTB,
+    PORTC,
+    PORTD,
+    PORTE,
+    PORTF,
+    PORTG
+} ports;
+
+typedef enum {
+    PORTA_ADDR = 0x1000,
+    DDRA = 0x1001,
+    PORTG_ADDR = 0x1002,
+    DDRG = 0x1003,
+    PORTB_ADDR = 0x1004,
+    PORTF_ADDR = 0x1005,
+    PORTC_ADDR = 0x1006,
+    DDRC = 0x1007,
+    PORTD_ADDR = 0x1008,
+    DDRD = 0x1009,
+    PORTE_ADDR = 0x100a,
+} ports_addr;
+
+typedef struct {
+    uint8_t opcode;
+    operand operand;
+} mnemonic;
+
 typedef struct {
     char *names[2]; // Some instructions have aliases like lda = ldaa
     uint8_t name_count;
@@ -133,14 +146,11 @@ typedef struct {
     uint16_t immediate_16;
 } instruction;
 
-static uint32_t file_line = 0;
 
-#define ERROR(f_, ...) do {\
-    printf("[ERROR] l.%u: "f_".\n", file_line, __VA_ARGS__); \
-    exit(1); \
-} while (0)
+const char *directives_name[] = { "org", "equ" };
+#define DIRECTIVE_COUNT ((uint8_t)(sizeof(directives_name) / sizeof(directives_name[0])))
 
-#define INFO(f_, ...) printf("[INFO] "f_"\n", __VA_ARGS__)
+
 
 void (*instr_func[0x100]) (cpu *cpu) = {0};
 
@@ -1496,3 +1506,4 @@ void exec_program(cpu *cpu) {
         cpu->pc++;
     }
 }
+#endif // EMULATOR_IMPLEMENTATION
