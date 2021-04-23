@@ -846,6 +846,8 @@ void INST_NEGB_INH(cpu *cpu) {
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
+void INST_NOP_INH(cpu *cpu) { // DOES NOTHING }
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1233,9 +1235,15 @@ instruction instructions[] = {
         .operands = { INHERENT },
     },
     {
-        .names = {"nega"}, .name_count = 1,
+        .names = {"negb"}, .name_count = 1,
         .codes = {[INHERENT]=0x50},
         .func = { [INHERENT]=INST_NEGB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"nop"}, .name_count = 1,
+        .codes = {[INHERENT]=0x01},
+        .func = { [INHERENT]=INST_NOP_INH},
         .operands = { INHERENT },
     },
 };
