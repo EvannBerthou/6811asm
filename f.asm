@@ -6,6 +6,7 @@ START equ $c150
     inca
     jsr f
     ldb #22
+    addb $50
 
 f
     psha

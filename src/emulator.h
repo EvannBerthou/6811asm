@@ -22,7 +22,9 @@ typedef enum {
     STOP  = 0x80,
 } flags;
 
-typedef enum { NONE, IMMEDIATE,
+typedef enum {
+    NONE,
+    IMMEDIATE,
     EXTENDED,
     DIRECT,
     INDEXDED_X,
@@ -805,7 +807,7 @@ instruction instructions[] = {
             [DIRECT]=INST_ADDB_DIR,
             [EXTENDED]=INST_ADDB_EXT
         },
-        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+        .operands = { IMMEDIATE, DIRECT },
     },
     {
         .names = {"tab"}, .name_count = 1,
@@ -1178,6 +1180,20 @@ void set_default_ddr(cpu *cpu) {
     cpu->memory[DDRD] = 0xFF;
 }
 
+const char *operand_type_as_str(operand_type type) {
+    switch (type) {
+        case NONE:       return "NONE";
+        case IMMEDIATE:  return "IMMEDIATE";
+        case EXTENDED:   return "EXTENDED";
+        case DIRECT:     return "DIRECT";
+        case INDEXDED_X: return "INDEXDED_X";
+        case INDEXDED_Y: return "INDEXDED_Y";
+        case INHERENT:   return "INHERENT";
+        case RELATIVE:   return "RELATIVE";
+        default: ERROR("UNKNOW OPERAND TYPE %d", type);
+    }
+}
+
 /*****************************
 *          Assembly          *
 *****************************/
@@ -1316,7 +1332,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
         }
         // Checks if the given addressig mode is used by this instruction
         else if (!is_valid_operand_type(inst, result.operand.type)) {
-            ERROR("%s does not support %s addressing mode\n", parts[1], "");
+            ERROR("%s does not support %s addressing mode\n", parts[1], operand_type_as_str(result.operand.type));
         }
     } else if (inst->operands[0] == INHERENT) {
         result.operand.type = INHERENT;
