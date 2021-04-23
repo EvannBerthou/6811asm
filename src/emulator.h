@@ -846,7 +846,58 @@ void INST_NEGB_INH(cpu *cpu) {
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
-void INST_NOP_INH(cpu *cpu) { // DOES NOTHING }
+void INST_NOP_INH(cpu *cpu) {
+    (void) cpu;
+    // DOES NOTHING
+}
+
+void INST_ORAA_IMM(cpu *cpu) {
+    uint8_t v = NEXT8(cpu);
+    uint8_t result = cpu->a | v;
+    cpu->a = result;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_ORAA_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    uint8_t result = cpu->a | v;
+    cpu->a = result;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_ORAA_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    uint8_t result = cpu->a | v;
+    cpu->a = result;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_ORAB_IMM(cpu *cpu) {
+    uint8_t v = NEXT8(cpu);
+    uint8_t result = cpu->b | v;
+    cpu->b = result;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_ORAB_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    uint8_t result = cpu->b | v;
+    cpu->b = result;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_ORAB_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    uint8_t result = cpu->b | v;
+    cpu->b = result;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
 
 instruction instructions[] = {
     {
@@ -1245,6 +1296,26 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x01},
         .func = { [INHERENT]=INST_NOP_INH},
         .operands = { INHERENT },
+    },
+    {
+        .names = {"oraa"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x8A, [DIRECT]=0x9A, [EXTENDED]=0xBA},
+        .func =  {
+            [IMMEDIATE]=INST_ORAA_IMM,
+            [DIRECT]=INST_ORAA_DIR,
+            [EXTENDED]=INST_ORAA_EXT,
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+    },
+    {
+        .names = {"orab"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xCA, [DIRECT]=0xDA, [EXTENDED]=0xFA},
+        .func =  {
+            [IMMEDIATE]=INST_ORAB_IMM,
+            [DIRECT]=INST_ORAB_DIR,
+            [EXTENDED]=INST_ORAB_EXT,
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
 };
 

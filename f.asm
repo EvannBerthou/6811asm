@@ -1,11 +1,9 @@
 START equ $C015
 
     org START
-    lda #$10
-    sta $FF
-    neg $FF
-    lda $FF
-    nega
+    lda #%1001
+    oraa #%1010
+; Gives #%1011 => 11 = 0xB
 
 
 boucle
