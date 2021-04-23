@@ -1298,7 +1298,7 @@ instruction instructions[] = {
         .operands = { INHERENT },
     },
     {
-        .names = {"oraa"}, .name_count = 1,
+        .names = {"oraa", "ora"}, .name_count = 2,
         .codes = {[IMMEDIATE]=0x8A, [DIRECT]=0x9A, [EXTENDED]=0xBA},
         .func =  {
             [IMMEDIATE]=INST_ORAA_IMM,
@@ -1308,7 +1308,7 @@ instruction instructions[] = {
         .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
     {
-        .names = {"orab"}, .name_count = 1,
+        .names = {"orab", "orb"}, .name_count = 2,
         .codes = {[IMMEDIATE]=0xCA, [DIRECT]=0xDA, [EXTENDED]=0xFA},
         .func =  {
             [IMMEDIATE]=INST_ORAB_IMM,
