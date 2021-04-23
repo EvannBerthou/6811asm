@@ -435,6 +435,65 @@ void INST_ADDD_EXT(cpu *cpu) {
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
+void INST_ANDA_IMM(cpu *cpu) {
+    uint8_t v = NEXT8(cpu);
+    int8_t result = cpu->a & v;
+    cpu->a = result;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = 0;
+}
+
+void INST_ANDA_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int8_t result = cpu->a & v;
+    cpu->a = result;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = 0;
+}
+
+void INST_ANDA_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    int8_t result = cpu->a & v;
+    cpu->a = result;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = 0;
+}
+
+void INST_ANDB_IMM(cpu *cpu) {
+    uint8_t v = NEXT8(cpu);
+    int8_t result = cpu->b & v;
+    cpu->b = result;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = 0;
+}
+
+void INST_ANDB_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int8_t result = cpu->b & v;
+    cpu->b = result;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = 0;
+}
+
+void INST_ANDB_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    int8_t result = cpu->b & v;
+    cpu->b = result;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = 0;
+}
+
+void INST_ALSA_INH(cpu *cpu) {
+    uint16_t result = cpu->a << 1;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_ALSB_INH(cpu *cpu) {
+    uint16_t result = cpu->b << 1;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
 
 void INST_STA_DIR(cpu *cpu) {
     uint8_t addr = NEXT8(cpu);
@@ -853,6 +912,38 @@ instruction instructions[] = {
         .immediate_16 = 1
     },
     {
+        .names = {"anda"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x84, [DIRECT]=0x94, [EXTENDED]=0xB4},
+        .func =  {
+            [IMMEDIATE]=INST_ANDA_IMM,
+            [DIRECT]=INST_ANDA_DIR,
+            [EXTENDED]=INST_ANDA_EXT
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+    },
+    {
+        .names = {"andb"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xC4, [DIRECT]=0xD4, [EXTENDED]=0xF4},
+        .func =  {
+            [IMMEDIATE]=INST_ANDB_IMM,
+            [DIRECT]=INST_ANDB_DIR,
+            [EXTENDED]=INST_ANDB_EXT
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+    },
+    {
+        .names = {"alsa"}, .name_count = 1,
+        .codes = {[INHERENT]=0x48},
+        .func =  {[INHERENT]=INST_ALSA_INH},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"alsb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x58},
+        .func =  {[INHERENT]=INST_ALSB_INH},
+        .operands = { INHERENT }
+    },
+    {
         .names = {"tab"}, .name_count = 1,
         .codes = {[INHERENT]=0x16},
         .func = {[INHERENT]=INST_TAB},
@@ -1263,6 +1354,7 @@ instruction * opcode_str_to_hex(const char *str) {
 
 // Returns operand type based on prefix and operand_value
 operand_type get_operand_type(const char *str) {
+    if (str == NULL) return NONE;
     if (str[0] == '#')                  return IMMEDIATE;
     if (str[0] == '<' && str[1] == '$') return DIRECT;
     if (str[0] == '>' && str[1] == '$') return EXTENDED;

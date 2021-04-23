@@ -73,8 +73,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Implémentation de toutes les instructions
         - ABX
         - ABY
-        - ADDD
-        - AND
         - ASL
         - ASLD
         - ASR
