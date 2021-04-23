@@ -6,8 +6,6 @@ START equ $c150
     inca
     jsr f
     ldb #22
-boucle
-    bra boucle
 
 f
     psha

@@ -150,6 +150,21 @@ void handle_args(args *args, int argc, char **argv) {
     }
 }
 
+void exec_program_step(cpu *cpu) {
+    while (cpu->memory[cpu->pc] != 0x00) {
+        printf("Next inst : "FMT8"\n", cpu->memory[cpu->pc]);
+        handle_commands(cpu);
+
+        uint8_t inst = cpu->memory[cpu->pc];
+        if (instr_func[inst] != NULL) {
+            (*instr_func[inst])(cpu); // Call the function with this opcode
+        }
+        cpu->pc++;
+    }
+    printf("Execution ended, you can still see last values\n");
+    handle_commands(cpu);
+}
+
 int main(int argc, char **argv) {
     args args = {0};
     handle_args(&args, argc, argv);
@@ -167,9 +182,10 @@ int main(int argc, char **argv) {
     if (args.dump) {
         dump_memory(&c, &args);
     } else {
-        //INFO("%s", "Loading sucess");
-        //INFO("%s", "Execution program");
-        exec_program(&c, args.step);
-        //INFO("%s", "Execution ended");
+        if (args.step) {
+            exec_program_step(&c);
+        } else {
+            exec_program(&c);
+        }
     }
 }

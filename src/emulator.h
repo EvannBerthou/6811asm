@@ -1469,22 +1469,12 @@ int load_program(cpu *cpu, const char *file_path) {
     return 1;
 }
 
-extern void handle_commands(cpu *cpu);
-void exec_program(cpu *cpu, int step) {
+void exec_program(cpu *cpu) {
     while (cpu->memory[cpu->pc] != 0x00) {
-        if (step) {
-            printf("Next inst : "FMT8"\n", cpu->memory[cpu->pc]);
-            handle_commands(cpu);
-        }
         uint8_t inst = cpu->memory[cpu->pc];
-        //printf("Executing "FMT8" instruction\n", inst);
         if (instr_func[inst] != NULL) {
             (*instr_func[inst])(cpu); // Call the function with this opcode
         }
         cpu->pc++;
-    }
-    if (step) {
-        printf("Execution ended, you can still see last values\n");
-        handle_commands(cpu);
     }
 }
