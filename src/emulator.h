@@ -1366,7 +1366,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
         if (inst->operands[0] == RELATIVE) {
             uint16_t operand_value = result.operand.value;
             if (result.operand.from_label) {
-                int8_t offset = result.operand.value - addr - 1;
+                int8_t offset = result.operand.value - addr - 2;
                 operand_value = offset;
             } else {
                 if (result.operand.value > 0xFF) {
@@ -1397,7 +1397,7 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     cpu->memory[addr + (written++)] = m->opcode;
     if (m->operand.type != NONE && m->operand.type != INHERENT) {
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
-        if (m->operand.value > 0xFF) {
+        if (m->operand.value > 0xFF || m->operand.type == EXTENDED) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
         }
         cpu->memory[addr + written++] = m->operand.value & 0xFF;
@@ -1435,7 +1435,8 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
         return (directive) {strdup(parts[0]), parts[1], {0, EXTENDED, 1}, LABEL};
     }
 
-    return (directive) {NULL, parts[1], {0, NONE, 0}, NOT_A_DIRECTIVE};
+    operand_type type = get_operand_type(parts[2]);
+    return (directive) {NULL, parts[1], {0, type, 0}, NOT_A_DIRECTIVE};
 }
 
 void load_program(cpu *cpu, const char *file_path) {
@@ -1477,15 +1478,10 @@ void load_program(cpu *cpu, const char *file_path) {
             if (inst == NULL) { continue; } // Unknow instruction
 
             addr++;
-            for (uint8_t i = 0; i < OPERAND_TYPE_COUNT; ++i) {
-                if (inst->operands[i] == DIRECT || (inst->operands[i] == IMMEDIATE && !inst->immediate_16)) {
-                    addr += 1;
-                    break;
-                }
-                if (inst->operands[i] == EXTENDED || (inst->operands[i] == IMMEDIATE && inst->immediate_16)) {
-                    addr += 2;
-                    break;
-                }
+            if (d.operand.type == DIRECT || (d.operand.type == IMMEDIATE && !inst->immediate_16)) {
+                addr += 1;
+            } else if (d.operand.type == EXTENDED || (d.operand.type == IMMEDIATE && inst->immediate_16)) {
+                addr += 2;
             }
         }
     }

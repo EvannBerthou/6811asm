@@ -7,6 +7,6 @@ START equ $C015
     stb <$1
     lda #0
     ldb #0
-    addd <$0
+
 boucle
     bra boucle
