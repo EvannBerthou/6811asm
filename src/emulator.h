@@ -131,9 +131,7 @@ typedef struct {
     uint16_t immediate_16;
 } instruction;
 
-
-const char *file_name = "f.asm";
-uint32_t file_line = 0;
+static uint32_t file_line = 0;
 
 #define ERROR(f_, ...) do {\
     printf("[ERROR] l.%u: "f_".\n", file_line, __VA_ARGS__); \
@@ -1085,13 +1083,11 @@ uint8_t is_str_in_parts(const char *str, char **parts, uint8_t parts_count) {
 
 const char *strdup(const char *base) {
     size_t len = strlen(base);
-    char *str = calloc(len + 1, sizeof(char));
+    char *str = malloc(len + 1 * sizeof(char));
     if (str == NULL) {
-        printf("calloc error\n");
-        exit(1);
+        ERROR("%s", "malloc");
     }
-    memcpy(str, base, len);
-    return str;
+    return memcpy(str, base, len);
 }
 
 uint8_t is_valid_operand_type(instruction *inst, operand_type type) {
@@ -1132,13 +1128,6 @@ uint8_t is_directive(const char *str) {
         }
     }
     return 0;
-}
-
-instruction * opcode_str_to_hex(const char *str);
-
-uint8_t is_instruction(const char *buf) {
-    instruction *inst = opcode_str_to_hex(buf);
-    return inst != NULL;
 }
 
 void str_tolower(char *str) {
@@ -1193,6 +1182,7 @@ void set_default_ddr(cpu *cpu) {
 *          Assembly          *
 *****************************/
 
+// Convert the given str to its opcode
 instruction * opcode_str_to_hex(const char *str) {
     for (int i = 0; i < INSTRUCTION_COUNT; ++i) {
         instruction *op = &instructions[i];
@@ -1326,7 +1316,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
         }
         // Checks if the given addressig mode is used by this instruction
         else if (!is_valid_operand_type(inst, result.operand.type)) {
-            ERROR("%s does not support %s addressing mode\n", parts[1], "TODO");
+            ERROR("%s does not support %s addressing mode\n", parts[1], "");
         }
     } else if (inst->operands[0] == INHERENT) {
         result.operand.type = INHERENT;
@@ -1382,14 +1372,15 @@ directive line_to_directive(char *line, directive *labels, uint8_t label_count) 
     return (directive) {NULL, parts[1], {0, NONE, 0}, NOT_A_DIRECTIVE};
 }
 
-int load_program(cpu *cpu, const char *file_path) {
+void load_program(cpu *cpu, const char *file_path) {
     FILE *f = fopen(file_path, "r");
     if (!f) {
-        printf("Error opennig file : %s\n", file_path);
-        exit(1);
+        ERROR("Error while opennig file : %s\n", file_path);
     }
 
-    // first pass
+    // First PASS
+    // On the first we get all the labels and directives which enables the use of labels that are later in the code.
+
     char buf[100];
     uint16_t addr = 0x0;
     for (;;) {
@@ -1397,11 +1388,13 @@ int load_program(cpu *cpu, const char *file_path) {
         if (fgets(buf, 100, f) == NULL) {
             break;
         }
+
         // Remove \n from buffer
         buf[strcspn(buf, "\n")] = '\0';
         if (str_empty(buf)) {
             continue;
         }
+
         str_tolower(buf);
         directive d = line_to_directive(buf, cpu->labels, cpu->label_count);
         if (d.type == CONSTANT) {
@@ -1414,7 +1407,7 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         if (d.opcode_str != NULL) {
             instruction *inst = opcode_str_to_hex(d.opcode_str);
-            if (inst == NULL) { continue; }
+            if (inst == NULL) { continue; } // Unknow instruction
 
             addr++;
             for (uint8_t i = 0; i < OPERAND_TYPE_COUNT; ++i) {
@@ -1430,21 +1423,21 @@ int load_program(cpu *cpu, const char *file_path) {
         }
     }
 
-    //INFO("Loaded %u labels", cpu->label_count);
-
-    //INFO("%s", "First pass done with success");
+    // Reset file reading progress
     rewind(f);
     addr = 0x0;
     file_line = 0;
 
     cpu->pc = addr;
-    // second pass
+    // Second PASS
+    // On the second pass, we convert all instructions to it's opcode.
     for (;;) {
         file_line++;
         if (fgets(buf, 100, f) == NULL) {
             break;
         }
-        // Remove \n from buffer buf[strcspn(buf, "\n")] = '\0'; if (str_empty(buf)) {
+
+        // Remove \n from buffer
         buf[strcspn(buf, "\n")] = '\0';
         if (str_empty(buf)) {
             continue;
@@ -1466,7 +1459,6 @@ int load_program(cpu *cpu, const char *file_path) {
         }
         addr += add_mnemonic_to_memory(cpu, &m, addr);
     }
-    return 1;
 }
 
 void exec_program(cpu *cpu) {

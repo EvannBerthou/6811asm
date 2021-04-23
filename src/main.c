@@ -173,11 +173,7 @@ int main(int argc, char **argv) {
 
     cpu c = (cpu) {0};
     set_default_ddr(&c);
-
-    //INFO("%s", "Loading program");
-    if (!load_program(&c, file_name)) {
-        return 0;
-    }
+    load_program(&c, "f.asm");
 
     if (args.dump) {
         dump_memory(&c, &args);
