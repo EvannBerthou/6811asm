@@ -483,6 +483,15 @@ void INST_ANDB_EXT(cpu *cpu) {
     cpu->v = 0;
 }
 
+void INST_ALS_EXT(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    uint16_t v = cpu->memory[addr];
+    uint32_t result = (v << 1);
+    INFO(FMT16" "FMT16, v, result);
+    cpu->memory[addr] = result & 0xFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
 void INST_ALSA_INH(cpu *cpu) {
     uint16_t result = cpu->a << 1;
     cpu->a = result & 0xFF;
@@ -930,6 +939,12 @@ instruction instructions[] = {
             [EXTENDED]=INST_ANDB_EXT
         },
         .operands = { IMMEDIATE, EXTENDED, DIRECT },
+    },
+    {
+        .names = {"als"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x78},
+        .func =  {[EXTENDED]=INST_ALS_EXT},
+        .operands = { EXTENDED }
     },
     {
         .names = {"alsa"}, .name_count = 1,
