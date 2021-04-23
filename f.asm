@@ -1,16 +1,12 @@
 START equ $C015
-    org $c015
-    lds #$FFFF
-    lda #$01
-    inca
-    jsr f
-    ldb #22
 
-f
-    psha
-    lda #$00
-    lda #$00
-    lda #$00
-    lda #$00
-    pula
-    rts
+    org START
+    lda #10
+    sta <$0
+    ldb #5
+    stb <$1
+    lda #0
+    ldb #0
+    addd <$0
+boucle
+    bra boucle

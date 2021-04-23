@@ -145,14 +145,12 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Support des opcode en 2 mots
     - Support des opcodes avec 2 operands (ex: bclr)
     - Pouvoir changer la valeur des ports d'entrée
-    - Prise en compte du registre D (double accumulateur)
     - Calcul du temps d'exécution du programme
     - Ajouter de commandes:
         - Print memory range : afficher la mémoire à partir d'une adresse quelconque
         - Set CCR : Changer les valeurs du CCR
     - Arguments:
         - --help
-    - Passer emulator.h en mode STB
 
 - Tests
     - Vérifier le parsing de toutes les instructions

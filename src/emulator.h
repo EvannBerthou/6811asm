@@ -413,6 +413,28 @@ void INST_ADDB_EXT(cpu *cpu) {
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
+void INST_ADDD_IMM(cpu *cpu) {
+    uint8_t v = NEXT16(cpu);
+    int32_t result = cpu->d + v;
+    cpu->d = result & 0xFFFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_ADDD_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int32_t result = cpu->d + v;
+    cpu->d = result & 0xFFFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_ADDD_EXT(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    uint16_t v = (cpu->memory[addr] << 8) | cpu->memory[addr + 1];
+    int32_t result = cpu->d + v;
+    cpu->d = result & 0xFFFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
 
 void INST_STA_DIR(cpu *cpu) {
     uint8_t addr = NEXT8(cpu);
@@ -817,7 +839,18 @@ instruction instructions[] = {
             [DIRECT]=INST_ADDB_DIR,
             [EXTENDED]=INST_ADDB_EXT
         },
-        .operands = { IMMEDIATE, DIRECT },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+    },
+    {
+        .names = {"addd"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xC3, [DIRECT]=0xD3, [EXTENDED]=0xF3},
+        .func =  {
+            [IMMEDIATE]=INST_ADDD_IMM,
+            [DIRECT]=INST_ADDD_DIR,
+            [EXTENDED]=INST_ADDD_EXT
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+        .immediate_16 = 1
     },
     {
         .names = {"tab"}, .name_count = 1,
