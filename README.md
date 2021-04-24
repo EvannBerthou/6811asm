@@ -84,7 +84,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - CPX
         - CPY
         - DAA
-        - DEC
         - DES
         - DEX
         - DEY

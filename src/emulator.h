@@ -882,11 +882,16 @@ void INST_DECA_INH(cpu *cpu) {
     cpu->a = a & 0xFF;
     SET_FLAGS(cpu, a, OFLOW | ZERO | NEG);
 }
+
 void INST_DECB_INH(cpu *cpu) {
     uint8_t b = cpu->b;
     b--;
     cpu->b = b;
     SET_FLAGS(cpu, b, OFLOW | ZERO | NEG);
+}
+
+void INST_DES_INH(cpu *cpu) {
+    cpu->sp--;
 }
 
 void INST_INCA_INH(cpu *cpu) {
@@ -1477,6 +1482,12 @@ instruction instructions[] = {
         .names = {"decb"}, .name_count = 1,
         .codes = {[INHERENT]=0x5A},
         .func = { [INHERENT]=INST_DECB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"des"}, .name_count = 1,
+        .codes = {[INHERENT]=0x34},
+        .func = { [INHERENT]=INST_DES_INH},
         .operands = { INHERENT },
     },
     {
