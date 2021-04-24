@@ -133,6 +133,7 @@ typedef enum {
 typedef struct {
     uint8_t opcode;
     operand operand;
+    uint8_t immediate_16;
 } mnemonic;
 
 typedef struct {
@@ -899,6 +900,48 @@ void INST_ORAB_EXT(cpu *cpu) {
     cpu->v = 0;
 }
 
+void INST_SUBA_IMM(cpu *cpu) {
+    uint8_t v = NEXT16(cpu);
+    int16_t result = cpu->a - v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_SUBA_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int16_t result = cpu->a - v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_SUBA_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    int16_t result = cpu->a - v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_SUBB_IMM(cpu *cpu) {
+    uint8_t v = NEXT16(cpu);
+    int16_t result = cpu->b - v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_SUBB_DIR(cpu *cpu) {
+    uint8_t v = DIR_WORD(cpu);
+    int16_t result = cpu->b - v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_SUBB_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    int16_t result = cpu->b - v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1317,6 +1360,28 @@ instruction instructions[] = {
         },
         .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
+    {
+        .names = {"suba"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x80, [DIRECT]=0x90, [EXTENDED]=0xB0},
+        .func =  {
+            [IMMEDIATE]=INST_SUBA_IMM,
+            [DIRECT]=INST_SUBA_DIR,
+            [EXTENDED]=INST_SUBA_EXT,
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+        .immediate_16 = 1
+    },
+    {
+        .names = {"subb"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xC0, [DIRECT]=0xD0, [EXTENDED]=0xF0},
+        .func =  {
+            [IMMEDIATE]=INST_SUBB_IMM,
+            [DIRECT]=INST_SUBB_DIR,
+            [EXTENDED]=INST_SUBB_EXT,
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+        .immediate_16 = 1
+    },
 };
 
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
@@ -1566,12 +1631,12 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
     char *parts[5] = {0};
     uint8_t nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
-        return (mnemonic) {0, {0, 0, 0}};
+        return (mnemonic) {0, {0, 0, 0}, 0};
     }
 
     // If there is only a label
     if (nb_parts == 1 && parts[0] != NULL) {
-        return (mnemonic) {0, {0, 0, 0}};
+        return (mnemonic) {0, {0, 0, 0}, 0};
     }
 
     nb_parts--; // Does as if there was no label
@@ -1587,6 +1652,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
     }
 
     mnemonic result = {0};
+    result.immediate_16 = inst->immediate_16;
     if (need_operand) {
         result.operand = get_operand_value(parts[2], labels, label_count);
         if (inst->operands[0] == RELATIVE) {
@@ -1623,7 +1689,7 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     cpu->memory[addr + (written++)] = m->opcode;
     if (m->operand.type != NONE && m->operand.type != INHERENT) {
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
-        if (m->operand.value > 0xFF || m->operand.type == EXTENDED) {
+        if (m->operand.value > 0xFF || m->operand.type == EXTENDED || m->immediate_16) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
         }
         cpu->memory[addr + written++] = m->operand.value & 0xFF;
@@ -1702,11 +1768,12 @@ void load_program(cpu *cpu, const char *file_path) {
         if (d.opcode_str != NULL) {
             instruction *inst = opcode_str_to_hex(d.opcode_str);
             if (inst == NULL) { continue; } // Unknow instruction
-
+            INFO("%s, operand type: %s, imm16: %d", d.opcode_str, operand_type_as_str(d.operand.type), inst->immediate_16);
             addr++;
             if (d.operand.type == DIRECT || (d.operand.type == IMMEDIATE && !inst->immediate_16)) {
                 addr += 1;
             } else if (d.operand.type == EXTENDED || (d.operand.type == IMMEDIATE && inst->immediate_16)) {
+                INFO("%s", "+2");
                 addr += 2;
             }
         }

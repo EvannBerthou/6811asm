@@ -1,9 +1,9 @@
 START equ $C015
 
     org START
-    lda #%1001
-    oraa #%1010
-; Gives #%1011 => 11 = 0xB
+    lda #5
+    suba #2
+; Gives #3
 
 
 boucle
