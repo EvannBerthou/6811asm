@@ -516,6 +516,12 @@ void INST_ASLB_INH(cpu *cpu) {
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
+void INST_ASLB_INH(cpu *cpu) {
+    uint32_t result = cpu->d << 1;
+    cpu->d = result & 0xFFFF;
+    SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
+}
+
 void INST_STA_DIR(cpu *cpu) {
     uint8_t addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->a;
@@ -1106,6 +1112,12 @@ instruction instructions[] = {
         .names = {"aslb"}, .name_count = 1,
         .codes = {[INHERENT]=0x58},
         .func =  {[INHERENT]=INST_ASLB_INH},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"asld"}, .name_count = 1,
+        .codes = {[INHERENT]=0x05},
+        .func =  {[INHERENT]=INST_ASLD_INH},
         .operands = { INHERENT }
     },
     {
