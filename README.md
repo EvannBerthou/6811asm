@@ -73,7 +73,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Implémentation de toutes les instructions
         - ABX
         - ABY
-        - ASLD
         - ASR
         - BCLR
         - BIT
@@ -82,7 +81,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - BSET
         - BSR
         - CBA
-        - CLR
         - CLV
         - COM
         - CPD

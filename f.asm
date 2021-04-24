@@ -8,6 +8,7 @@ START equ $C015
     lda #$20
     ldb #$10
     subd <$0
+    clra
 ; Gives 0x2010 - 0x0502 = 0x1B0E
 
 

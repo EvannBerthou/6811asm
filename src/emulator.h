@@ -516,7 +516,7 @@ void INST_ASLB_INH(cpu *cpu) {
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
-void INST_ASLB_INH(cpu *cpu) {
+void INST_ASLD_INH(cpu *cpu) {
     uint32_t result = cpu->d << 1;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
@@ -980,6 +980,32 @@ void INST_SUBD_EXT(cpu *cpu) {
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
+void INST_CLR_EXT(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    cpu->memory[addr] = 0;
+
+    uint8_t top = ((cpu->status >> 4) & 0xF) << 4;
+    uint8_t bot = 0x4; // 0b0100
+    cpu->status = top | bot;
+}
+
+void INST_CLRA_INH(cpu *cpu) {
+    cpu->a = 0;
+
+    uint8_t top = ((cpu->status >> 4) & 0xF) << 4;
+    uint8_t bot = 0x4; // 0b0100
+    cpu->status = top | bot;
+}
+
+void INST_CLRB_INH(cpu *cpu) {
+    cpu->b = 0;
+
+    uint8_t top = ((cpu->status >> 4) & 0xF) << 4;
+    uint8_t bot = 0x4; // 0b0100
+    cpu->status = top | bot;
+}
+
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1435,6 +1461,24 @@ instruction instructions[] = {
         .operands = { IMMEDIATE, EXTENDED, DIRECT },
         .immediate_16 = 1
     },
+    {
+        .names = {"clr"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x7F},
+        .func =  {[EXTENDED]=INST_CLR_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"clra"}, .name_count = 1,
+        .codes = {[INHERENT]=0x4F},
+        .func =  {[INHERENT]=INST_CLRA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"clrb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x5F},
+        .func =  {[INHERENT]=INST_CLRB_INH},
+        .operands = { INHERENT },
+    },
 };
 
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
@@ -1823,10 +1867,8 @@ void load_program(cpu *cpu, const char *file_path) {
             if (inst == NULL) { continue; } // Unknow instruction
             addr++;
             if (d.operand.type == DIRECT || (d.operand.type == IMMEDIATE && !inst->immediate_16)) {
-                INFO("%s %s", d.opcode_str, "+1");
                 addr += 1;
             } else if (d.operand.type == EXTENDED || (d.operand.type == IMMEDIATE && inst->immediate_16)) {
-                INFO("%s %s", d.opcode_str, "+2");
                 addr += 2;
             }
         }
