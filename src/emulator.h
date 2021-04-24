@@ -1005,6 +1005,10 @@ void INST_CLRB_INH(cpu *cpu) {
     cpu->status = top | bot;
 }
 
+void INST_CLV_INH(cpu *cpu) {
+    cpu->v = 0;
+}
+
 
 instruction instructions[] = {
     {
@@ -1477,6 +1481,12 @@ instruction instructions[] = {
         .names = {"clrb"}, .name_count = 1,
         .codes = {[INHERENT]=0x5F},
         .func =  {[INHERENT]=INST_CLRB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"clv"}, .name_count = 1,
+        .codes = {[INHERENT]=0x5F},
+        .func =  {[INHERENT]=INST_CLV_INH},
         .operands = { INHERENT },
     },
 };
