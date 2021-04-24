@@ -80,7 +80,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - BRSET
         - BSET
         - BSR
-        - COM
         - CPD
         - CPX
         - CPY

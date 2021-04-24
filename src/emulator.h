@@ -768,6 +768,38 @@ void INST_CBA_INH(cpu *cpu) {
     SET_CMP_FLAGS(cpu, a, b);
 }
 
+void INST_COM_EXT(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    uint8_t v = cpu->memory[addr];
+    v = 0xFF - v;
+    cpu->memory[addr] = v & 0xFF;
+
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->c = 0;
+}
+
+void INST_COMA_INH(cpu *cpu) {
+    uint8_t v = cpu->a;
+    v = 0xFF - v;
+    cpu->a = v & 0xFF;
+
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->c = 0;
+}
+
+void INST_COMB_INH(cpu *cpu) {
+    uint8_t v = cpu->b;
+    v = 0xFF - v;
+    cpu->b = v & 0xFF;
+
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->c = 0;
+}
+
+
 void INST_LDS_IMM(cpu *cpu) {
     uint16_t v = NEXT16(cpu);
     SET_FLAGS(cpu, v, NEG | ZERO);
@@ -1192,8 +1224,26 @@ instruction instructions[] = {
     },
     {
         .names = {"cba"}, .name_count = 1,
-        .codes = {[IMMEDIATE]=0x81},
+        .codes = {[INHERENT]=0x81},
         .func =  {[INHERENT]=INST_CBA_INH},
+        .operands = {INHERENT},
+    },
+    {
+        .names = {"com"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x73},
+        .func =  {[EXTENDED]=INST_COM_EXT},
+        .operands = {EXTENDED},
+    },
+    {
+        .names = {"coma"}, .name_count = 1,
+        .codes = {[INHERENT]=0x43},
+        .func =  {[INHERENT]=INST_COMA_INH},
+        .operands = {INHERENT},
+    },
+    {
+        .names = {"comb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x53},
+        .func =  {[INHERENT]=INST_COMB_INH},
         .operands = {INHERENT},
     },
     {
