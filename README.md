@@ -73,7 +73,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
     - Implémentation de toutes les instructions
         - ABX
         - ABY
-        - ASL
         - ASLD
         - ASR
         - BCLR
@@ -121,8 +120,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - STS
         - STX
         - STY
-        - SUB
-        - SUBD
         - SWI
         - TAP
         - TEST

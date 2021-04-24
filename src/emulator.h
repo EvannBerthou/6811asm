@@ -496,7 +496,7 @@ void INST_ANDB_EXT(cpu *cpu) {
     cpu->v = 0;
 }
 
-void INST_ALS_EXT(cpu *cpu) {
+void INST_ASL_EXT(cpu *cpu) {
     uint16_t addr = NEXT16(cpu);
     uint16_t v = cpu->memory[addr];
     uint32_t result = (v << 1);
@@ -504,13 +504,13 @@ void INST_ALS_EXT(cpu *cpu) {
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
-void INST_ALSA_INH(cpu *cpu) {
+void INST_ASLA_INH(cpu *cpu) {
     uint16_t result = cpu->a << 1;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
-void INST_ALSB_INH(cpu *cpu) {
+void INST_ASLB_INH(cpu *cpu) {
     uint16_t result = cpu->b << 1;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
@@ -1091,21 +1091,21 @@ instruction instructions[] = {
         .operands = { IMMEDIATE, EXTENDED, DIRECT },
     },
     {
-        .names = {"als"}, .name_count = 1,
+        .names = {"asl"}, .name_count = 1,
         .codes = {[EXTENDED]=0x78},
-        .func =  {[EXTENDED]=INST_ALS_EXT},
+        .func =  {[EXTENDED]=INST_ASL_EXT},
         .operands = { EXTENDED }
     },
     {
-        .names = {"alsa"}, .name_count = 1,
+        .names = {"asla"}, .name_count = 1,
         .codes = {[INHERENT]=0x48},
-        .func =  {[INHERENT]=INST_ALSA_INH},
+        .func =  {[INHERENT]=INST_ASLA_INH},
         .operands = { INHERENT }
     },
     {
-        .names = {"alsb"}, .name_count = 1,
+        .names = {"aslb"}, .name_count = 1,
         .codes = {[INHERENT]=0x58},
-        .func =  {[INHERENT]=INST_ALSB_INH},
+        .func =  {[INHERENT]=INST_ASLB_INH},
         .operands = { INHERENT }
     },
     {
