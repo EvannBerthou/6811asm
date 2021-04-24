@@ -868,6 +868,27 @@ void INST_PULX_INH(cpu *cpu) {
     cpu->x = v;
 }
 
+void INST_DEC_EXT(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    uint8_t m = cpu->memory[addr];
+    m--;
+    cpu->memory[addr] = m & 0xFF;
+    SET_FLAGS(cpu, m, OFLOW | ZERO | NEG);
+}
+
+void INST_DECA_INH(cpu *cpu) {
+    uint8_t a = cpu->a;
+    a--;
+    cpu->a = a & 0xFF;
+    SET_FLAGS(cpu, a, OFLOW | ZERO | NEG);
+}
+void INST_DECB_INH(cpu *cpu) {
+    uint8_t b = cpu->b;
+    b--;
+    cpu->b = b;
+    SET_FLAGS(cpu, b, OFLOW | ZERO | NEG);
+}
+
 void INST_INCA_INH(cpu *cpu) {
     int16_t result = cpu->a + 1;
     cpu->a = result & 0xFF;
@@ -1438,6 +1459,24 @@ instruction instructions[] = {
         .names = {"pulx"}, .name_count = 1,
         .codes = {[INHERENT]=0x38},
         .func = { [INHERENT]=INST_PULX_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"dec"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x7A},
+        .func = { [EXTENDED]=INST_DEC_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"deca"}, .name_count = 1,
+        .codes = {[INHERENT]=0x4A},
+        .func = { [INHERENT]=INST_DECA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"decb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x5A},
+        .func = { [INHERENT]=INST_DECB_INH},
         .operands = { INHERENT },
     },
     {
