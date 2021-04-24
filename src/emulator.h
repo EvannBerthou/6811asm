@@ -762,6 +762,12 @@ void INST_CMPB_EXT(cpu *cpu) {
     SET_CMP_FLAGS(cpu, b, v);
 }
 
+void INST_CBA_INH(cpu *cpu) {
+    uint8_t a = cpu->a;
+    uint8_t b = cpu->b;
+    SET_CMP_FLAGS(cpu, a, b);
+}
+
 void INST_LDS_IMM(cpu *cpu) {
     uint16_t v = NEXT16(cpu);
     SET_FLAGS(cpu, v, NEG | ZERO);
@@ -1183,6 +1189,12 @@ instruction instructions[] = {
         },
         .operands = { IMMEDIATE, DIRECT, EXTENDED },
         .immediate_16 = 1
+    },
+    {
+        .names = {"cba"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x81},
+        .func =  {[INHERENT]=INST_CBA_INH},
+        .operands = {INHERENT},
     },
     {
         .names = {"bcc", "bhs"}, .name_count = 2,
