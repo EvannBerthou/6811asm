@@ -177,8 +177,20 @@ uint8_t DIR_WORD(cpu *cpu) {
     return cpu->memory[addr];
 }
 
+uint16_t DIR_WORD16(cpu *cpu) {
+    // Get values of the next operands
+    uint8_t addr = NEXT8(cpu);
+    // Get value the operand is poiting at
+    return (cpu->memory[addr] << 8) | cpu->memory[addr + 1];
+}
+
 uint8_t EXT_WORD(cpu *cpu) {
     return cpu->memory[NEXT16(cpu)];
+}
+
+uint16_t EXT_WORD16(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    return (cpu->memory[addr] << 8) | cpu->memory[addr + 1];
 }
 
 uint8_t STACK_POP8(cpu *cpu) {
@@ -488,7 +500,6 @@ void INST_ALS_EXT(cpu *cpu) {
     uint16_t addr = NEXT16(cpu);
     uint16_t v = cpu->memory[addr];
     uint32_t result = (v << 1);
-    INFO(FMT16" "FMT16, v, result);
     cpu->memory[addr] = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
@@ -901,7 +912,7 @@ void INST_ORAB_EXT(cpu *cpu) {
 }
 
 void INST_SUBA_IMM(cpu *cpu) {
-    uint8_t v = NEXT16(cpu);
+    uint8_t v = NEXT8(cpu);
     int16_t result = cpu->a - v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
@@ -922,7 +933,7 @@ void INST_SUBA_EXT(cpu *cpu) {
 }
 
 void INST_SUBB_IMM(cpu *cpu) {
-    uint8_t v = NEXT16(cpu);
+    uint8_t v = NEXT8(cpu);
     int16_t result = cpu->b - v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
@@ -939,6 +950,27 @@ void INST_SUBB_EXT(cpu *cpu) {
     uint8_t v = EXT_WORD(cpu);
     int16_t result = cpu->b - v;
     cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_SUBD_IMM(cpu *cpu) {
+    uint16_t v = NEXT16(cpu);
+    int32_t result = cpu->d - v;
+    cpu->d = result & 0xFFFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_SUBD_DIR(cpu *cpu) {
+    uint16_t v = DIR_WORD16(cpu);
+    int32_t result = cpu->d - v;
+    cpu->d = result & 0xFFFF;
+    SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
+}
+
+void INST_SUBD_EXT(cpu *cpu) {
+    uint16_t v = EXT_WORD16(cpu);
+    int32_t result = cpu->d - v;
+    cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
@@ -1369,7 +1401,6 @@ instruction instructions[] = {
             [EXTENDED]=INST_SUBA_EXT,
         },
         .operands = { IMMEDIATE, EXTENDED, DIRECT },
-        .immediate_16 = 1
     },
     {
         .names = {"subb"}, .name_count = 1,
@@ -1378,6 +1409,16 @@ instruction instructions[] = {
             [IMMEDIATE]=INST_SUBB_IMM,
             [DIRECT]=INST_SUBB_DIR,
             [EXTENDED]=INST_SUBB_EXT,
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+    },
+    {
+        .names = {"subd"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x83, [DIRECT]=0x93, [EXTENDED]=0xB3},
+        .func =  {
+            [IMMEDIATE]=INST_SUBD_IMM,
+            [DIRECT]=INST_SUBD_DIR,
+            [EXTENDED]=INST_SUBD_EXT,
         },
         .operands = { IMMEDIATE, EXTENDED, DIRECT },
         .immediate_16 = 1
@@ -1689,7 +1730,7 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     cpu->memory[addr + (written++)] = m->opcode;
     if (m->operand.type != NONE && m->operand.type != INHERENT) {
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
-        if (m->operand.value > 0xFF || m->operand.type == EXTENDED || m->immediate_16) {
+        if (m->operand.value > 0xFF || m->operand.type == EXTENDED || (m->operand.type == IMMEDIATE && m->immediate_16)) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
         }
         cpu->memory[addr + written++] = m->operand.value & 0xFF;
@@ -1768,12 +1809,12 @@ void load_program(cpu *cpu, const char *file_path) {
         if (d.opcode_str != NULL) {
             instruction *inst = opcode_str_to_hex(d.opcode_str);
             if (inst == NULL) { continue; } // Unknow instruction
-            INFO("%s, operand type: %s, imm16: %d", d.opcode_str, operand_type_as_str(d.operand.type), inst->immediate_16);
             addr++;
             if (d.operand.type == DIRECT || (d.operand.type == IMMEDIATE && !inst->immediate_16)) {
+                INFO("%s %s", d.opcode_str, "+1");
                 addr += 1;
             } else if (d.operand.type == EXTENDED || (d.operand.type == IMMEDIATE && inst->immediate_16)) {
-                INFO("%s", "+2");
+                INFO("%s %s", d.opcode_str, "+2");
                 addr += 2;
             }
         }
