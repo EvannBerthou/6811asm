@@ -93,7 +93,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - INS
         - INX
         - INY
-        - JMP
         - LDD
         - LDX
         - LDY

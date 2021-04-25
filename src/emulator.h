@@ -1073,6 +1073,9 @@ void INST_CLV_INH(cpu *cpu) {
     cpu->v = 0;
 }
 
+void INST_JMP_EXT(cpu *cpu) {
+    cpu->pc = EXT_WORD16(cpu);
+}
 
 instruction instructions[] = {
     {
@@ -1600,6 +1603,12 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x5F},
         .func =  {[INHERENT]=INST_CLV_INH},
         .operands = { INHERENT },
+    },
+    {
+        .names = {"clv"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x7E},
+        .func =  {[EXTENDED]=INST_JMP_EXT},
+        .operands = { EXTENDED },
     },
 };
 
