@@ -14,6 +14,11 @@
 #define FMT8 "0x%02x"
 #define FMT16 "0x%04x"
 
+#define u8 uint8_t
+#define u16 uint16_t
+#define i8 int8_t
+#define i16 int16_t
+
 typedef enum {
     NONE,
     IMMEDIATE,
@@ -27,9 +32,9 @@ typedef enum {
 } operand_type;
 
 typedef struct {
-    uint16_t value;
+    u16 value;
     operand_type type;
-    uint8_t from_label;
+    u8 from_label;
 } operand;
 
 typedef enum {
@@ -52,34 +57,34 @@ typedef struct {
 typedef struct {
     union {
         struct {
-            uint8_t b; // B is low order
-            uint8_t a; // A is high order
+            u8 b; // B is low order
+            u8 a; // A is high order
         };
-        uint16_t d;
+        u16 d;
     };
-    uint16_t sp;
-    uint16_t pc;
+    u16 sp;
+    u16 pc;
     union {
         struct {
-            uint8_t s : 1;
-            uint8_t x : 1;
-            uint8_t h : 1;
-            uint8_t i : 1;
-            uint8_t n : 1;
-            uint8_t z : 1;
-            uint8_t v : 1;
-            uint8_t c : 1;
+            u8 s : 1;
+            u8 x : 1;
+            u8 h : 1;
+            u8 i : 1;
+            u8 n : 1;
+            u8 z : 1;
+            u8 v : 1;
+            u8 c : 1;
         };
-        uint8_t status;
+        u8 status;
     };
 
-    uint8_t memory[MAX_MEMORY];
+    u8 memory[MAX_MEMORY];
 
-    uint8_t ports[MAX_PORTS];
-    uint8_t ddrx[MAX_PORTS];
+    u8 ports[MAX_PORTS];
+    u8 ddrx[MAX_PORTS];
 
     directive labels[MAX_LABELS];
-    uint8_t label_count;
+    u8 label_count;
 } cpu;
 
 #endif // EMUALTOR_H
@@ -131,25 +136,25 @@ typedef enum {
 } ports_addr;
 
 typedef struct {
-    uint8_t opcode;
+    u8 opcode;
     operand operand;
-    uint8_t immediate_16;
+    u8 immediate_16;
 } mnemonic;
 
 typedef struct {
     char *names[2]; // Some instructions have aliases like lda = ldaa
-    uint8_t name_count;
-    uint8_t codes[OPERAND_TYPE_COUNT];
+    u8 name_count;
+    u8 codes[OPERAND_TYPE_COUNT];
     void (*func[OPERAND_TYPE_COUNT]) (cpu *cpu);
     operand_type operands[OPERAND_TYPE_COUNT];
     // The maximum value an operand in immediate addressing mode can have,
     // certain isntruction like 'LDA' can go up to 0xFF but others like 'LDS' can go up to 0xFFFF
-    uint16_t immediate_16;
+    u16 immediate_16;
 } instruction;
 
 
 const char *directives_name[] = { "org", "equ" };
-#define DIRECTIVE_COUNT ((uint8_t)(sizeof(directives_name) / sizeof(directives_name[0])))
+#define DIRECTIVE_COUNT ((u8)(sizeof(directives_name) / sizeof(directives_name[0])))
 
 
 
@@ -158,70 +163,70 @@ void (*instr_func[0x100]) (cpu *cpu) = {0};
 /*****************************
 *        Instructions        *
 *****************************/
-uint16_t join(uint8_t a, uint8_t b) {
+u16 join(u8 a, u8 b) {
     return (a << 8) | b;
 }
 
 // Returns addr and addr + 1 in a single value
-uint16_t join_addr(cpu *cpu, uint8_t addr) {
+u16 join_addr(cpu *cpu, u8 addr) {
     return join(cpu->memory[addr], cpu->memory[addr + 1]);
 }
 
-uint8_t NEXT8(cpu *cpu) {
+u8 NEXT8(cpu *cpu) {
     return cpu->memory[++cpu->pc];
 }
 
-uint16_t NEXT16(cpu *cpu) {
-    uint8_t b0 = NEXT8(cpu); // high order byte
-    uint8_t b1 = NEXT8(cpu); // low order byte
+u16 NEXT16(cpu *cpu) {
+    u8 b0 = NEXT8(cpu); // high order byte
+    u8 b1 = NEXT8(cpu); // low order byte
     return join(b0, b1);
 }
 
-uint8_t DIR_WORD(cpu *cpu) {
+u8 DIR_WORD(cpu *cpu) {
     // Get value of the next operand
-    uint8_t addr = NEXT8(cpu);
+    u8 addr = NEXT8(cpu);
     // Get value the operand is poiting at
     return cpu->memory[addr];
 }
 
-uint16_t DIR_WORD16(cpu *cpu) {
+u16 DIR_WORD16(cpu *cpu) {
     // Get values of the next operands
-    uint8_t addr = NEXT8(cpu);
+    u8 addr = NEXT8(cpu);
     // Get value the operand is poiting at
     return join_addr(cpu, addr);
 }
 
-uint8_t EXT_WORD(cpu *cpu) {
+u8 EXT_WORD(cpu *cpu) {
     return cpu->memory[NEXT16(cpu)];
 }
 
-uint16_t EXT_WORD16(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
+u16 EXT_WORD16(cpu *cpu) {
+    u16 addr = NEXT16(cpu);
     return join_addr(cpu, addr);
 }
 
-uint8_t STACK_POP8(cpu *cpu) {
+u8 STACK_POP8(cpu *cpu) {
     cpu->sp++;
     return cpu->memory[cpu->sp];
 }
 
-uint16_t STACK_POP16(cpu *cpu) {
-    uint8_t v1 = STACK_POP8(cpu);
-    uint8_t v2 = STACK_POP8(cpu);
+u16 STACK_POP16(cpu *cpu) {
+    u8 v1 = STACK_POP8(cpu);
+    u8 v2 = STACK_POP8(cpu);
     return join(v1, v2);
 }
 
-void STACK_PUSH8(cpu *cpu, uint8_t v) {
+void STACK_PUSH8(cpu *cpu, u8 v) {
     cpu->memory[cpu->sp] = v & 0xFF;
     cpu->sp--;
 }
 
-void STACK_PUSH16(cpu *cpu, uint16_t v) {
+void STACK_PUSH16(cpu *cpu, u16 v) {
     STACK_PUSH8(cpu, v & 0xFF);
     STACK_PUSH8(cpu, (v >> 8) & 0xFF);
 }
 
-void SET_FLAGS(cpu *cpu, int16_t result, uint8_t flags) {
+void SET_FLAGS(cpu *cpu, i16 result, u8 flags) {
     if (flags & CARRY) {
         cpu->c = (result > 0xFF) || (result < 0);
     }
@@ -261,9 +266,9 @@ void INST_SEI(cpu *cpu) {
     cpu->i = 1;
 }
 
-uint16_t READ_FROM_PORTS(cpu *cpu, uint16_t addr) {
+u16 READ_FROM_PORTS(cpu *cpu, u16 addr) {
     if (addr == PORTA_ADDR) {
-        uint8_t ret = cpu->ports[PORTA] & 0x7;
+        u8 ret = cpu->ports[PORTA] & 0x7;
         // Or with ret only if third and seventh bit is 0 (input mode)
         ret |= cpu->ports[PORTA] & (~((cpu->memory[addr] >> 3) & 1) << 3);
         ret |= cpu->ports[PORTA] & (~((cpu->memory[addr] >> 7) & 1) << 7);
@@ -286,7 +291,7 @@ uint16_t READ_FROM_PORTS(cpu *cpu, uint16_t addr) {
     return 0xFFFF;
 }
 
-void SET_LD_FLAGS(cpu *cpu, uint8_t result) {
+void SET_LD_FLAGS(cpu *cpu, u8 result) {
     cpu->n = (result >> 7) & 1;
     cpu->z = result == 0;
     cpu->v = 0;
@@ -294,25 +299,25 @@ void SET_LD_FLAGS(cpu *cpu, uint8_t result) {
 
 void INST_LDA_IMM(cpu *cpu) {
     // Operand is a constant, just load the next byte in memory
-    uint8_t value = NEXT8(cpu);
+    u8 value = NEXT8(cpu);
     cpu->a = value;
     SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDA_DIR(cpu *cpu) {
-    uint8_t value = DIR_WORD(cpu);
+    u8 value = DIR_WORD(cpu);
     cpu->a = value;
     SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDA_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint16_t port_val = READ_FROM_PORTS(cpu, addr);
+    u16 addr = NEXT16(cpu);
+    u16 port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->a = port_val;
         SET_LD_FLAGS(cpu, port_val);
     } else {
-        uint8_t value = cpu->memory[addr];
+        u8 value = cpu->memory[addr];
         cpu->a = value;
         SET_LD_FLAGS(cpu, value);
     }
@@ -320,25 +325,25 @@ void INST_LDA_EXT(cpu *cpu) {
 
 void INST_LDB_IMM(cpu *cpu) {
     // Operand is a constant, just load the next byte in memory
-    uint8_t value = NEXT8(cpu);
+    u8 value = NEXT8(cpu);
     cpu->b = value;
     SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDB_DIR(cpu *cpu) {
-    uint8_t value = DIR_WORD(cpu);
+    u8 value = DIR_WORD(cpu);
     cpu->b = value;
     SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDB_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint16_t port_val = READ_FROM_PORTS(cpu, addr);
+    u16 addr = NEXT16(cpu);
+    u16 port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->b = port_val;
         SET_LD_FLAGS(cpu, port_val);
     } else {
-        uint8_t value = cpu->memory[addr];
+        u8 value = cpu->memory[addr];
         cpu->b = value;
         SET_LD_FLAGS(cpu, value);
     }
@@ -346,206 +351,206 @@ void INST_LDB_EXT(cpu *cpu) {
 
 void INST_LDD_IMM(cpu *cpu) {
     // Operand is a constant, just load the next byte in memory
-    uint16_t value = NEXT16(cpu);
+    u16 value = NEXT16(cpu);
     cpu->d = value;
     SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDD_DIR(cpu *cpu) {
-    uint16_t value = DIR_WORD(cpu);
+    u16 value = DIR_WORD(cpu);
     cpu->d = value;
     SET_LD_FLAGS(cpu, value);
 }
 
 void INST_LDD_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint16_t port_val = READ_FROM_PORTS(cpu, addr);
+    u16 addr = NEXT16(cpu);
+    u16 port_val = READ_FROM_PORTS(cpu, addr);
     if (port_val < 0xFF) { // < 0xFF means reading from a port
         cpu->d = port_val;
         SET_LD_FLAGS(cpu, port_val);
     } else {
-        uint16_t value = join_addr(cpu, addr);
+        u16 value = join_addr(cpu, addr);
         cpu->d = value;
         SET_LD_FLAGS(cpu, value);
     }
 }
 
 void INST_ABA(cpu *cpu) {
-    int16_t result = cpu->a + cpu->b;
+    i16 result = cpu->a + cpu->b;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCA_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    int16_t result = cpu->a + v + cpu->c;
+    u8 v = NEXT8(cpu);
+    i16 result = cpu->a + v + cpu->c;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCA_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    int16_t result = cpu->a + v + cpu->c;
+    u8 v = DIR_WORD(cpu);
+    i16 result = cpu->a + v + cpu->c;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCA_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    int16_t result = cpu->a + v + cpu->c;
+    u8 v = EXT_WORD(cpu);
+    i16 result = cpu->a + v + cpu->c;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCB_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    int16_t result = cpu->b + v + cpu->c;
+    u8 v = NEXT8(cpu);
+    i16 result = cpu->b + v + cpu->c;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCB_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    int16_t result = cpu->b + v + cpu->c;
+    u8 v = DIR_WORD(cpu);
+    i16 result = cpu->b + v + cpu->c;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADCB_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    int16_t result = cpu->b + v + cpu->c;
+    u8 v = EXT_WORD(cpu);
+    i16 result = cpu->b + v + cpu->c;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDA_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    int16_t result = cpu->a + v;
+    u8 v = NEXT8(cpu);
+    i16 result = cpu->a + v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDA_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    int16_t result = cpu->a + v;
+    u8 v = DIR_WORD(cpu);
+    i16 result = cpu->a + v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDA_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    int16_t result = cpu->a + v;
+    u8 v = EXT_WORD(cpu);
+    i16 result = cpu->a + v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDB_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    int16_t result = cpu->b + v;
+    u8 v = NEXT8(cpu);
+    i16 result = cpu->b + v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDB_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    int16_t result = cpu->b + v;
+    u8 v = DIR_WORD(cpu);
+    i16 result = cpu->b + v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDB_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    int16_t result = cpu->b + v;
+    u8 v = EXT_WORD(cpu);
+    i16 result = cpu->b + v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDD_IMM(cpu *cpu) {
-    uint8_t v = NEXT16(cpu);
+    u8 v = NEXT16(cpu);
     int32_t result = cpu->d + v;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDD_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
+    u8 v = DIR_WORD(cpu);
     int32_t result = cpu->d + v;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ADDD_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint16_t v = join_addr(cpu, addr);
+    u16 addr = NEXT16(cpu);
+    u16 v = join_addr(cpu, addr);
     int32_t result = cpu->d + v;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ANDA_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    int8_t result = cpu->a & v;
+    u8 v = NEXT8(cpu);
+    i8 result = cpu->a & v;
     cpu->a = result;
     SET_FLAGS(cpu, result, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_ANDA_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    int8_t result = cpu->a & v;
+    u8 v = DIR_WORD(cpu);
+    i8 result = cpu->a & v;
     cpu->a = result;
     SET_FLAGS(cpu, result, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_ANDA_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    int8_t result = cpu->a & v;
+    u8 v = EXT_WORD(cpu);
+    i8 result = cpu->a & v;
     cpu->a = result;
     SET_FLAGS(cpu, result, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_ANDB_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    int8_t result = cpu->b & v;
+    u8 v = NEXT8(cpu);
+    i8 result = cpu->b & v;
     cpu->b = result;
     SET_FLAGS(cpu, result, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_ANDB_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    int8_t result = cpu->b & v;
+    u8 v = DIR_WORD(cpu);
+    i8 result = cpu->b & v;
     cpu->b = result;
     SET_FLAGS(cpu, result, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_ANDB_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    int8_t result = cpu->b & v;
+    u8 v = EXT_WORD(cpu);
+    i8 result = cpu->b & v;
     cpu->b = result;
     SET_FLAGS(cpu, result, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_ASL_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint16_t v = cpu->memory[addr];
+    u16 addr = NEXT16(cpu);
+    u16 v = cpu->memory[addr];
     uint32_t result = (v << 1);
     cpu->memory[addr] = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ASLA_INH(cpu *cpu) {
-    uint16_t result = cpu->a << 1;
+    u16 result = cpu->a << 1;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_ASLB_INH(cpu *cpu) {
-    uint16_t result = cpu->b << 1;
+    u16 result = cpu->b << 1;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
@@ -557,13 +562,13 @@ void INST_ASLD_INH(cpu *cpu) {
 }
 
 void INST_STA_DIR(cpu *cpu) {
-    uint8_t addr = NEXT8(cpu);
+    u8 addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->a;
     SET_FLAGS(cpu, cpu->a, ZERO | NEG);
     cpu->v = 0;
 }
 
-uint8_t WRITE_TO_PORTS(cpu *cpu, uint16_t addr) {
+u8 WRITE_TO_PORTS(cpu *cpu, u16 addr) {
     if (addr == PORTA_ADDR) { // PORT A
         cpu->ports[PORTA] = cpu->a & cpu->memory[DDRA]; // Only write where bits are in output mode
         return 1;
@@ -611,7 +616,7 @@ uint8_t WRITE_TO_PORTS(cpu *cpu, uint16_t addr) {
 }
 
 void INST_STA_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
+    u16 addr = NEXT16(cpu);
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->a;
     }
@@ -620,14 +625,14 @@ void INST_STA_EXT(cpu *cpu) {
 }
 
 void INST_STB_DIR(cpu *cpu) {
-    uint8_t addr = NEXT8(cpu);
+    u8 addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->b;
     SET_FLAGS(cpu, cpu->a, ZERO | NEG);
     cpu->v = 0;
 }
 
 void INST_STB_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
+    u16 addr = NEXT16(cpu);
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->b;
     }
@@ -636,110 +641,110 @@ void INST_STB_EXT(cpu *cpu) {
 }
 
 void INST_BRA(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
-    cpu->pc += (int8_t) jmp;
+    u8 jmp = NEXT8(cpu);
+    cpu->pc += (i8) jmp;
 }
 
 void INST_BCC(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->c == 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BCS(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->c == 1) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BEQ(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->z == 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BGE(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if ((cpu->n ^ cpu->v) == 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BGT(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->z + (cpu->n ^ cpu->v) == 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BHI(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->c + cpu->z == 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BLE(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->z + (cpu->n ^ cpu->c) != 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BLS(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->c + cpu->z != 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BLT(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->n + cpu->v != 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BMI(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->n == 1) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BNE(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->z == 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BPL(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->n == 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BRN(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     (void) jmp;
 }
 
 void INST_BVC(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->v == 0) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
 void INST_BVS(cpu *cpu) {
-    uint8_t jmp = NEXT8(cpu);
+    u8 jmp = NEXT8(cpu);
     if (cpu->v == 1) {
-        cpu->pc += (int8_t) jmp;
+        cpu->pc += (i8) jmp;
     }
 }
 
@@ -759,56 +764,56 @@ void INST_TBA_INH(cpu *cpu) {
     cpu->v = 0;
 }
 
-void SET_CMP_FLAGS(cpu *cpu, uint8_t a, uint8_t v) {
-    int16_t r = a - v;
+void SET_CMP_FLAGS(cpu *cpu, u8 a, u8 v) {
+    i16 r = a - v;
     SET_FLAGS(cpu, r, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_CMPA_IMM(cpu *cpu) {
-    uint8_t a = cpu->a;
-    uint8_t v = NEXT8(cpu);
+    u8 a = cpu->a;
+    u8 v = NEXT8(cpu);
     SET_CMP_FLAGS(cpu, a, v);
 }
 
 void INST_CMPA_DIR(cpu *cpu) {
-    uint8_t a = cpu->a;
-    uint8_t v = DIR_WORD(cpu);
+    u8 a = cpu->a;
+    u8 v = DIR_WORD(cpu);
     SET_CMP_FLAGS(cpu, a, v);
 }
 
 void INST_CMPA_EXT(cpu *cpu) {
-    uint8_t a = cpu->a;
-    uint8_t v = EXT_WORD(cpu);
+    u8 a = cpu->a;
+    u8 v = EXT_WORD(cpu);
     SET_CMP_FLAGS(cpu, a, v);
 }
 
 void INST_CMPB_IMM(cpu *cpu) {
-    uint8_t b = cpu->b;
-    uint8_t v = NEXT8(cpu);
+    u8 b = cpu->b;
+    u8 v = NEXT8(cpu);
     SET_CMP_FLAGS(cpu, b, v);
 }
 
 void INST_CMPB_DIR(cpu *cpu) {
-    uint8_t b = cpu->b;
-    uint8_t v = DIR_WORD(cpu);
+    u8 b = cpu->b;
+    u8 v = DIR_WORD(cpu);
     SET_CMP_FLAGS(cpu, b, v);
 }
 
 void INST_CMPB_EXT(cpu *cpu) {
-    uint8_t b = cpu->b;
-    uint8_t v = EXT_WORD(cpu);
+    u8 b = cpu->b;
+    u8 v = EXT_WORD(cpu);
     SET_CMP_FLAGS(cpu, b, v);
 }
 
 void INST_CBA_INH(cpu *cpu) {
-    uint8_t a = cpu->a;
-    uint8_t b = cpu->b;
+    u8 a = cpu->a;
+    u8 b = cpu->b;
     SET_CMP_FLAGS(cpu, a, b);
 }
 
 void INST_COM_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint8_t v = cpu->memory[addr];
+    u16 addr = NEXT16(cpu);
+    u8 v = cpu->memory[addr];
     v = 0xFF - v;
     cpu->memory[addr] = v & 0xFF;
 
@@ -818,7 +823,7 @@ void INST_COM_EXT(cpu *cpu) {
 }
 
 void INST_COMA_INH(cpu *cpu) {
-    uint8_t v = cpu->a;
+    u8 v = cpu->a;
     v = 0xFF - v;
     cpu->a = v & 0xFF;
 
@@ -828,7 +833,7 @@ void INST_COMA_INH(cpu *cpu) {
 }
 
 void INST_COMB_INH(cpu *cpu) {
-    uint8_t v = cpu->b;
+    u8 v = cpu->b;
     v = 0xFF - v;
     cpu->b = v & 0xFF;
 
@@ -839,90 +844,90 @@ void INST_COMB_INH(cpu *cpu) {
 
 
 void INST_LDS_IMM(cpu *cpu) {
-    uint16_t v = NEXT16(cpu);
+    u16 v = NEXT16(cpu);
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->sp = v;
 }
 
 void INST_LDS_DIR(cpu *cpu) {
-    uint16_t v = DIR_WORD(cpu);
+    u16 v = DIR_WORD(cpu);
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->sp = v;
 }
 
 void INST_LDS_EXT(cpu *cpu) {
-    uint16_t v = EXT_WORD(cpu);
+    u16 v = EXT_WORD(cpu);
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->sp = v;
 }
 
 void INST_RTS_INH(cpu *cpu) {
-    uint16_t ret_addr = STACK_POP16(cpu);
+    u16 ret_addr = STACK_POP16(cpu);
     cpu->pc = ret_addr;
 }
 
 void INST_JSR_DIR(cpu *cpu) {
-    uint8_t sub_addr = DIR_WORD(cpu);
+    u8 sub_addr = DIR_WORD(cpu);
     STACK_PUSH16(cpu, cpu->pc);
     cpu->pc = sub_addr;
 }
 
 void INST_JSR_EXT(cpu *cpu) {
-    uint16_t sub_addr = NEXT16(cpu);
+    u16 sub_addr = NEXT16(cpu);
     STACK_PUSH16(cpu, cpu->pc);
     cpu->pc = sub_addr;
 }
 
 void INST_PSHA_INH(cpu *cpu) {
-    uint8_t a = cpu->a;
+    u8 a = cpu->a;
     STACK_PUSH8(cpu, a);
 }
 
 void INST_PSHB_INH(cpu *cpu) {
-    uint8_t b = cpu->b;
+    u8 b = cpu->b;
     STACK_PUSH8(cpu, b);
 }
 
 void INST_PSHX_INH(cpu *cpu) {
-    uint8_t x = cpu->x;
+    u8 x = cpu->x;
     STACK_PUSH16(cpu, x);
 }
 
 void INST_PULA_INH(cpu *cpu) {
-    uint8_t v = STACK_POP8(cpu);
+    u8 v = STACK_POP8(cpu);
     cpu->a = v;
 }
 
 void INST_PULB_INH(cpu *cpu) {
-    uint8_t v = STACK_POP8(cpu);
+    u8 v = STACK_POP8(cpu);
     cpu->b = v;
 }
 
 void INST_PULX_INH(cpu *cpu) {
-    uint16_t v = STACK_POP16(cpu);
+    u16 v = STACK_POP16(cpu);
     cpu->x = v;
 }
 
 void INST_DEC_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint8_t m = cpu->memory[addr];
+    u16 addr = NEXT16(cpu);
+    u8 m = cpu->memory[addr];
     m--;
     cpu->memory[addr] = m & 0xFF;
     SET_FLAGS(cpu, m, OFLOW | ZERO | NEG);
 }
 
 void INST_DECA_INH(cpu *cpu) {
-    uint8_t a = cpu->a;
+    u8 a = cpu->a;
     a--;
     cpu->a = a & 0xFF;
     SET_FLAGS(cpu, a, OFLOW | ZERO | NEG);
 }
 
 void INST_DECB_INH(cpu *cpu) {
-    uint8_t b = cpu->b;
+    u8 b = cpu->b;
     b--;
     cpu->b = b;
     SET_FLAGS(cpu, b, OFLOW | ZERO | NEG);
@@ -933,41 +938,41 @@ void INST_DES_INH(cpu *cpu) {
 }
 
 void INST_INC_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint16_t v = cpu->memory[addr] + 1;
+    u16 addr = NEXT16(cpu);
+    u16 v = cpu->memory[addr] + 1;
     cpu->memory[addr] = v & 0xFF;
     SET_FLAGS(cpu, v, OFLOW | ZERO | NEG);
 }
 
 void INST_INCA_INH(cpu *cpu) {
-    int16_t result = cpu->a + 1;
+    i16 result = cpu->a + 1;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, result, OFLOW | ZERO | NEG);
 }
 
 void INST_INCB_INH(cpu *cpu) {
-    int16_t result = cpu->b + 1;
+    i16 result = cpu->b + 1;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, result, OFLOW | ZERO | NEG);
 }
 
 void INST_NEG_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
-    uint8_t v = cpu->memory[addr];
+    u16 addr = NEXT16(cpu);
+    u8 v = cpu->memory[addr];
     v = -v;
     cpu->memory[addr] = v;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_NEGA_INH(cpu *cpu) {
-    uint8_t v = cpu->a;
+    u8 v = cpu->a;
     v = -v;
     cpu->a = v;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_NEGB_INH(cpu *cpu) {
-    uint8_t v = cpu->b;
+    u8 v = cpu->b;
     v = -v;
     cpu->b = v;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
@@ -979,138 +984,138 @@ void INST_NOP_INH(cpu *cpu) {
 }
 
 void INST_ORAA_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    uint8_t result = cpu->a | v;
+    u8 v = NEXT8(cpu);
+    u8 result = cpu->a | v;
     cpu->a = result;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_ORAA_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    uint8_t result = cpu->a | v;
+    u8 v = DIR_WORD(cpu);
+    u8 result = cpu->a | v;
     cpu->a = result;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_ORAA_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    uint8_t result = cpu->a | v;
+    u8 v = EXT_WORD(cpu);
+    u8 result = cpu->a | v;
     cpu->a = result;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_ORAB_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    uint8_t result = cpu->b | v;
+    u8 v = NEXT8(cpu);
+    u8 result = cpu->b | v;
     cpu->b = result;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_ORAB_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    uint8_t result = cpu->b | v;
+    u8 v = DIR_WORD(cpu);
+    u8 result = cpu->b | v;
     cpu->b = result;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_ORAB_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    uint8_t result = cpu->b | v;
+    u8 v = EXT_WORD(cpu);
+    u8 result = cpu->b | v;
     cpu->b = result;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_SUBA_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    int16_t result = cpu->a - v;
+    u8 v = NEXT8(cpu);
+    i16 result = cpu->a - v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_SUBA_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    int16_t result = cpu->a - v;
+    u8 v = DIR_WORD(cpu);
+    i16 result = cpu->a - v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_SUBA_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    int16_t result = cpu->a - v;
+    u8 v = EXT_WORD(cpu);
+    i16 result = cpu->a - v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_SUBB_IMM(cpu *cpu) {
-    uint8_t v = NEXT8(cpu);
-    int16_t result = cpu->b - v;
+    u8 v = NEXT8(cpu);
+    i16 result = cpu->b - v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_SUBB_DIR(cpu *cpu) {
-    uint8_t v = DIR_WORD(cpu);
-    int16_t result = cpu->b - v;
+    u8 v = DIR_WORD(cpu);
+    i16 result = cpu->b - v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_SUBB_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
-    int16_t result = cpu->b - v;
+    u8 v = EXT_WORD(cpu);
+    i16 result = cpu->b - v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_SUBD_IMM(cpu *cpu) {
-    uint16_t v = NEXT16(cpu);
+    u16 v = NEXT16(cpu);
     int32_t result = cpu->d - v;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_SUBD_DIR(cpu *cpu) {
-    uint16_t v = DIR_WORD16(cpu);
+    u16 v = DIR_WORD16(cpu);
     int32_t result = cpu->d - v;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_SUBD_EXT(cpu *cpu) {
-    uint16_t v = EXT_WORD16(cpu);
+    u16 v = EXT_WORD16(cpu);
     int32_t result = cpu->d - v;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, v, CARRY | OFLOW | ZERO | NEG);
 }
 
 void INST_CLR_EXT(cpu *cpu) {
-    uint16_t addr = NEXT16(cpu);
+    u16 addr = NEXT16(cpu);
     cpu->memory[addr] = 0;
 
-    uint8_t top = ((cpu->status >> 4) & 0xF) << 4;
-    uint8_t bot = 0x4; // 0b0100
+    u8 top = ((cpu->status >> 4) & 0xF) << 4;
+    u8 bot = 0x4; // 0b0100
     cpu->status = top | bot;
 }
 
 void INST_CLRA_INH(cpu *cpu) {
     cpu->a = 0;
 
-    uint8_t top = ((cpu->status >> 4) & 0xF) << 4;
-    uint8_t bot = 0x4; // 0b0100
+    u8 top = ((cpu->status >> 4) & 0xF) << 4;
+    u8 bot = 0x4; // 0b0100
     cpu->status = top | bot;
 }
 
 void INST_CLRB_INH(cpu *cpu) {
     cpu->b = 0;
 
-    uint8_t top = ((cpu->status >> 4) & 0xF) << 4;
-    uint8_t bot = 0x4; // 0b0100
+    u8 top = ((cpu->status >> 4) & 0xF) << 4;
+    u8 bot = 0x4; // 0b0100
     cpu->status = top | bot;
 }
 
@@ -1130,7 +1135,7 @@ void INST_MUL_INH(cpu *cpu) {
 
 void INST_STS_DIR(cpu *cpu) {
     uint32_t result = cpu->sp;
-    uint8_t addr = NEXT8(cpu);
+    u8 addr = NEXT8(cpu);
     cpu->memory[addr]     = (cpu->sp >> 8) & 0xFF;
     cpu->memory[addr + 1] = cpu->sp & 0xFF;
     SET_FLAGS(cpu, result, NEG | ZERO);
@@ -1139,7 +1144,7 @@ void INST_STS_DIR(cpu *cpu) {
 
 void INST_STS_EXT(cpu *cpu) {
     uint32_t result = cpu->sp;
-    uint16_t addr = NEXT16(cpu);
+    u16 addr = NEXT16(cpu);
     cpu->memory[addr]     = (cpu->sp >> 8) & 0xFF;
     cpu->memory[addr + 1] = cpu->sp & 0xFF;
     SET_FLAGS(cpu, result, NEG | ZERO);
@@ -1151,14 +1156,14 @@ void INST_TPA_INH(cpu *cpu) {
 }
 
 void INST_TST_EXT(cpu *cpu) {
-    uint8_t v = EXT_WORD(cpu);
+    u8 v = EXT_WORD(cpu);
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->c = 0;
 }
 
 void INST_TSTA_INH(cpu *cpu) {
-    uint8_t v = cpu->a;
+    u8 v = cpu->a;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->c = 0;
@@ -1166,61 +1171,61 @@ void INST_TSTA_INH(cpu *cpu) {
 }
 
 void INST_TSTB_INH(cpu *cpu) {
-    uint8_t v = cpu->b;
+    u8 v = cpu->b;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->c = 0;
 }
 
 void INST_EORA_IMM(cpu *cpu) {
-    uint8_t a = cpu->a;
-    uint8_t v = NEXT8(cpu);
-    uint8_t result = a ^ v;
+    u8 a = cpu->a;
+    u8 v = NEXT8(cpu);
+    u8 result = a ^ v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_EORA_DIR(cpu *cpu) {
-    uint8_t a = cpu->a;
-    uint8_t v = DIR_WORD(cpu);
-    uint8_t result = a ^ v;
+    u8 a = cpu->a;
+    u8 v = DIR_WORD(cpu);
+    u8 result = a ^ v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_EORA_EXT(cpu *cpu) {
-    uint8_t a = cpu->a;
-    uint8_t v = EXT_WORD(cpu);
-    uint8_t result = a ^ v;
+    u8 a = cpu->a;
+    u8 v = EXT_WORD(cpu);
+    u8 result = a ^ v;
     cpu->a = result & 0xFF;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_EORB_IMM(cpu *cpu) {
-    uint8_t b = cpu->b;
-    uint8_t v = NEXT8(cpu);
-    uint8_t result = b ^ v;
+    u8 b = cpu->b;
+    u8 v = NEXT8(cpu);
+    u8 result = b ^ v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_EORB_DIR(cpu *cpu) {
-    uint8_t b = cpu->b;
-    uint8_t v = DIR_WORD(cpu);
-    uint8_t result = b ^ v;
+    u8 b = cpu->b;
+    u8 v = DIR_WORD(cpu);
+    u8 result = b ^ v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
 }
 
 void INST_EORB_EXT(cpu *cpu) {
-    uint8_t b = cpu->b;
-    uint8_t v = EXT_WORD(cpu);
-    uint8_t result = b ^ v;
+    u8 b = cpu->b;
+    u8 v = EXT_WORD(cpu);
+    u8 result = b ^ v;
     cpu->b = result & 0xFF;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
@@ -1974,7 +1979,7 @@ instruction instructions[] = {
 
 };
 
-#define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
+#define INSTRUCTION_COUNT ((u8)(sizeof(instructions) / sizeof(instructions[0])))
 
 
 /*****************************
@@ -1982,14 +1987,14 @@ instruction instructions[] = {
 *****************************/
 
 void free_cpu(cpu *cpu) {
-    for (uint8_t i = 0; i < cpu->label_count; ++i) {
+    for (u8 i = 0; i < cpu->label_count; ++i) {
         free((void *)cpu->labels[i].label);
     }
 }
 
 void add_instructions_func() {
     memset(instr_func, 0, 0x100 * sizeof(void*));
-    for (uint8_t i = 0; i < INSTRUCTION_COUNT; ++i) {
+    for (u8 i = 0; i < INSTRUCTION_COUNT; ++i) {
         instruction *inst = &instructions[i];
         operand_type *type = inst->operands;
         while (*type != NONE) {
@@ -1999,13 +2004,13 @@ void add_instructions_func() {
     }
 }
 
-uint8_t str_prefix(const char *str, const char *pre)
+u8 str_prefix(const char *str, const char *pre)
 {
     return strncmp(pre, str, strlen(pre)) == 0;
 }
 
-uint8_t is_str_in_parts(const char *str, char **parts, uint8_t parts_count) {
-    for (uint8_t i = 0; i < parts_count; i++) {
+u8 is_str_in_parts(const char *str, char **parts, u8 parts_count) {
+    for (u8 i = 0; i < parts_count; i++) {
         if (parts[i] == NULL) continue;
         if (strcmp(parts[i], str) == 0) return 1;
     }
@@ -2022,7 +2027,7 @@ const char *strdup(const char *base) {
     return memcpy(str, base, len);
 }
 
-uint8_t is_valid_operand_type(instruction *inst, operand_type type) {
+u8 is_valid_operand_type(instruction *inst, operand_type type) {
     operand_type *base = inst->operands;
     while(*base != NONE) {
         if (*base == type) {
@@ -2040,8 +2045,8 @@ int str_empty(const char *str) {
     return 1;
 }
 
-directive *get_directive_by_label(const char *label, directive *labels, uint8_t label_count) {
-    for (uint8_t i = 0; i < label_count; ++i) {
+directive *get_directive_by_label(const char *label, directive *labels, u8 label_count) {
+    for (u8 i = 0; i < label_count; ++i) {
         if (strcmp(label, labels[i].label) == 0) {
             return &labels[i];
         }
@@ -2049,8 +2054,8 @@ directive *get_directive_by_label(const char *label, directive *labels, uint8_t 
     return NULL;
 }
 
-uint8_t is_directive(const char *str) {
-    for (uint8_t i = 0; i < DIRECTIVE_COUNT; ++i) {
+u8 is_directive(const char *str) {
+    for (u8 i = 0; i < DIRECTIVE_COUNT; ++i) {
         const char *substr = strstr(str, directives_name[i]);
         if (substr != NULL) {
             // Verify if the word is surrouned by spaces (and not inside a word)
@@ -2063,16 +2068,16 @@ uint8_t is_directive(const char *str) {
 }
 
 void str_tolower(char *str) {
-    for (uint8_t i = 0; *str != '\0'; ++i, ++str) {
+    for (u8 i = 0; *str != '\0'; ++i, ++str) {
         *str = tolower(*str);
     }
 }
 
-uint8_t split_by_space(char *str, char **out, uint8_t n) {
+u8 split_by_space(char *str, char **out, u8 n) {
     assert(str);
     assert(n);
-    uint8_t nb_parts = 0;
-    uint8_t state = 0;
+    u8 nb_parts = 0;
+    u8 state = 0;
     while (*str) {
         if (*str == ';' || *str == '*' ||(*str == '/' && *(str + 1) == '/')) { // If start of a comment
             return nb_parts;
@@ -2151,7 +2156,7 @@ operand_type get_operand_type(const char *str) {
     return NONE;
 }
 
-uint16_t convert_str_from_base(const char *str, uint8_t base) {
+u16 convert_str_from_base(const char *str, u8 base) {
     char *end;
     long l = strtol(str, &end, base);
     if ((l == 0 && str == end) || *end != '\0') {
@@ -2163,22 +2168,22 @@ uint16_t convert_str_from_base(const char *str, uint8_t base) {
     return l;
 }
 
-uint16_t hex_str_to_u16(const char *str) {
+u16 hex_str_to_u16(const char *str) {
     str += 2; // skips the #$
     return convert_str_from_base(str, 16);
 }
 
-uint16_t dec_str_to_u16(const char *str) {
+u16 dec_str_to_u16(const char *str) {
     str += 1; // skips the #
     return convert_str_from_base(str, 10);
 }
 
-uint16_t bin_str_to_u16(const char *str) {
+u16 bin_str_to_u16(const char *str) {
     str += 2; // skips the #$
     return convert_str_from_base(str, 2);
 }
 
-operand get_operand_value(const char *str, directive *labels, uint8_t label_count) {
+operand get_operand_value(const char *str, directive *labels, u8 label_count) {
     directive *directive = NULL;
     if (labels) {
         directive = get_directive_by_label(str, labels, label_count);
@@ -2188,8 +2193,8 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
         return (operand) {directive->operand.value, directive->operand.type, 1};
     }
 
-    uint8_t offset = str[0] == '<' || str[0] == '>';
-    uint16_t operand_value = 0;
+    u8 offset = str[0] == '<' || str[0] == '>';
+    u16 operand_value = 0;
     if (offset == 0 && str[0] == '#') {
         if (str[1] == '$') { // Hexadecimal
             operand_value = hex_str_to_u16(str);
@@ -2217,9 +2222,9 @@ operand get_operand_value(const char *str, directive *labels, uint8_t label_coun
     return (operand) {operand_value, type, 0};
 }
 
-mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, uint16_t addr) {
+mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 addr) {
     char *parts[5] = {0};
-    uint8_t nb_parts = split_by_space(line, parts, 5);
+    u8 nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
         return (mnemonic) {0, {0, 0, 0}, 0};
     }
@@ -2236,7 +2241,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
         ERROR("%s is an undefined (or not implemented) instruction", parts[1]);
     }
 
-    uint8_t need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
+    u8 need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
     if (need_operand != (nb_parts - 1)) { // need an operand but none were given
         ERROR("%s instruction requires %d operand but %d recieved\n", parts[1], need_operand, nb_parts - 1);
     }
@@ -2246,9 +2251,9 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
     if (need_operand) {
         result.operand = get_operand_value(parts[2], labels, label_count);
         if (inst->operands[0] == RELATIVE) {
-            uint16_t operand_value = result.operand.value;
+            u16 operand_value = result.operand.value;
             if (result.operand.from_label) {
-                int8_t offset = result.operand.value - addr - 2;
+                i8 offset = result.operand.value - addr - 2;
                 operand_value = offset;
             } else {
                 if (result.operand.value > 0xFF) {
@@ -2274,8 +2279,8 @@ mnemonic line_to_mnemonic(char *line, directive *labels, uint8_t label_count, ui
     return result;
 }
 
-uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
-    uint8_t written = 0; // Number of bytes written
+u8 add_mnemonic_to_memory(cpu *cpu, mnemonic *m, u16 addr) {
+    u8 written = 0; // Number of bytes written
     cpu->memory[addr + (written++)] = m->opcode;
     if (m->operand.type != NONE && m->operand.type != INHERENT) {
         // TODO: Certain instruction such as CPX uses 2 operands even for immediate mode
@@ -2287,9 +2292,9 @@ uint8_t add_mnemonic_to_memory(cpu *cpu, mnemonic *m, uint16_t addr) {
     return written;
 }
 
-directive line_to_directive(char *line, directive *labels, uint8_t label_count) {
+directive line_to_directive(char *line, directive *labels, u8 label_count) {
     char *parts[5] = {0};
-    uint8_t nb_parts = split_by_space(line, parts, 5);
+    u8 nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
         return (directive) {NULL, NULL, {0, NONE, 0}, NOT_A_DIRECTIVE};
     }
@@ -2331,7 +2336,7 @@ void load_program(cpu *cpu, const char *file_path) {
     // On the first we get all the labels and directives which enables the use of labels that are later in the code.
 
     char buf[100];
-    uint16_t addr = 0x0;
+    u16 addr = 0x0;
     for (;;) {
         file_line++;
         if (fgets(buf, 100, f) == NULL) {
@@ -2409,7 +2414,7 @@ void load_program(cpu *cpu, const char *file_path) {
 
 void exec_program(cpu *cpu) {
     while (cpu->memory[cpu->pc] != 0x00) {
-        uint8_t inst = cpu->memory[cpu->pc];
+        u8 inst = cpu->memory[cpu->pc];
         if (instr_func[inst] != NULL) {
             (*instr_func[inst])(cpu); // Call the function with this opcode
         }
