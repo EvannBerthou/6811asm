@@ -84,7 +84,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - CPX
         - CPY
         - DAA
-        - DES
         - DEX
         - DEY
         - EOR
@@ -114,7 +113,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - SWI
         - TAP
         - TEST
-        - TST
         - TSX
         - TSY
         - TXS
