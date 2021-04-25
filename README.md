@@ -114,7 +114,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - SWI
         - TAP
         - TEST
-        - TPA
         - TST
         - TSX
         - TSY

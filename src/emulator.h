@@ -1101,6 +1101,10 @@ void INST_STS_EXT(cpu *cpu) {
     cpu->v = 0;
 }
 
+void INST_TPA_INH(cpu *cpu) {
+    cpu->a = cpu->status;
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1648,6 +1652,12 @@ instruction instructions[] = {
             [EXTENDED]=INST_STS_EXT,
         },
         .operands = { DIRECT, EXTENDED },
+    },
+    {
+        .names = {"tpa"}, .name_count = 1,
+        .codes = {[INHERENT]=0x07},
+        .func =  {[INHERENT]=INST_TPA_INH},
+        .operands = { INHERENT },
     },
 };
 
