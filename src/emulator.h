@@ -1226,6 +1226,10 @@ void INST_EORB_EXT(cpu *cpu) {
     cpu->v = 0;
 }
 
+void INST_INS_INH(cpu *cpu) {
+    cpu->sp++;
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1961,6 +1965,13 @@ instruction instructions[] = {
         },
         .operands = { IMMEDIATE, DIRECT, EXTENDED },
     },
+    {
+        .names = {"ins"}, .name_count = 1,
+        .codes = {[INHERENT]=0x31 },
+        .func =  { [INHERENT]=INST_INS_INH },
+        .operands = { INHERENT },
+    },
+
 };
 
 #define INSTRUCTION_COUNT ((uint8_t)(sizeof(instructions) / sizeof(instructions[0])))
