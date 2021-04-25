@@ -109,7 +109,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - SBC
         - STD
         - STOP
-        - STS
         - STX
         - STY
         - SWI

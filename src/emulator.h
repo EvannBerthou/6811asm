@@ -1083,6 +1083,24 @@ void INST_MUL_INH(cpu *cpu) {
     SET_FLAGS(cpu, result, CARRY);
 }
 
+void INST_STS_DIR(cpu *cpu) {
+    uint32_t result = cpu->sp;
+    uint8_t addr = NEXT8(cpu);
+    cpu->memory[addr]     = (cpu->sp >> 8) & 0xFF;
+    cpu->memory[addr + 1] = cpu->sp & 0xFF;
+    SET_FLAGS(cpu, result, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_STS_EXT(cpu *cpu) {
+    uint32_t result = cpu->sp;
+    uint16_t addr = NEXT16(cpu);
+    cpu->memory[addr]     = (cpu->sp >> 8) & 0xFF;
+    cpu->memory[addr + 1] = cpu->sp & 0xFF;
+    SET_FLAGS(cpu, result, NEG | ZERO);
+    cpu->v = 0;
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1621,6 +1639,15 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x3D},
         .func =  {[INHERENT]=INST_MUL_INH},
         .operands = { INHERENT },
+    },
+    {
+        .names = {"sts"}, .name_count = 1,
+        .codes = {[DIRECT]=0x9F, [EXTENDED]=0xBF},
+        .func =  {
+            [DIRECT]=INST_STS_DIR,
+            [EXTENDED]=INST_STS_EXT,
+        },
+        .operands = { DIRECT, EXTENDED },
     },
 };
 
