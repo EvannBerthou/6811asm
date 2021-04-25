@@ -275,6 +275,7 @@ uint16_t READ_FROM_PORTS(cpu *cpu, uint16_t addr) {
         return cpu->ports[PORTE];
     }
 
+    // If we get there, it means we're not reading from a port
     return 0xFFFF;
 }
 
@@ -332,6 +333,34 @@ void INST_LDB_EXT(cpu *cpu) {
     } else {
         uint8_t value = cpu->memory[addr];
         cpu->b = value;
+        SET_LD_FLAGS(cpu, value);
+    }
+}
+
+void INST_LDD_IMM(cpu *cpu) {
+    // Operand is a constant, just load the next byte in memory
+    uint16_t value = NEXT16(cpu);
+    cpu->d = value;
+    SET_LD_FLAGS(cpu, value);
+}
+
+void INST_LDD_DIR(cpu *cpu) {
+    uint16_t value = DIR_WORD(cpu);
+    cpu->d = value;
+    SET_LD_FLAGS(cpu, value);
+}
+
+void INST_LDD_EXT(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    uint16_t port_val = READ_FROM_PORTS(cpu, addr);
+    if (port_val < 0xFF) { // < 0xFF means reading from a port
+        cpu->d = port_val;
+        SET_LD_FLAGS(cpu, port_val);
+    } else {
+        uint8_t a = cpu->memory[addr];
+        uint8_t b = cpu->memory[addr + 1];
+        uint16_t value = (a << 8) | b;
+        cpu->d = value;
         SET_LD_FLAGS(cpu, value);
     }
 }
@@ -1208,6 +1237,17 @@ instruction instructions[] = {
             [EXTENDED]=INST_LDB_EXT,
         },
         .operands = { IMMEDIATE, EXTENDED, DIRECT },
+    },
+    {
+        .names = {"ldad", "ldd"}, .name_count = 2,
+        .codes = {[IMMEDIATE]=0xCC, [DIRECT]=0xDC, [EXTENDED]=0xFC},
+        .func =  {
+            [IMMEDIATE]=INST_LDD_IMM,
+            [DIRECT]=INST_LDD_DIR,
+            [EXTENDED]=INST_LDD_EXT,
+        },
+        .operands = { IMMEDIATE, EXTENDED, DIRECT },
+        .immediate_16 = 1,
     },
     {
         .names = {"staa", "sta"}, .name_count = 2,
