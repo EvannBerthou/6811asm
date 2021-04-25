@@ -894,6 +894,13 @@ void INST_DES_INH(cpu *cpu) {
     cpu->sp--;
 }
 
+void INST_INC_EXT(cpu *cpu) {
+    uint16_t addr = NEXT16(cpu);
+    uint16_t v = cpu->memory[addr] + 1;
+    cpu->memory[addr] = v & 0xFF;
+    SET_FLAGS(cpu, v, OFLOW | ZERO | NEG);
+}
+
 void INST_INCA_INH(cpu *cpu) {
     int16_t result = cpu->a + 1;
     cpu->a = result & 0xFF;
@@ -1596,6 +1603,12 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x34},
         .func = { [INHERENT]=INST_DES_INH},
         .operands = { INHERENT },
+    },
+    {
+        .names = {"inc"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x7C},
+        .func = { [EXTENDED]=INST_INC_EXT},
+        .operands = { EXTENDED },
     },
     {
         .names = {"inca"}, .name_count = 1,

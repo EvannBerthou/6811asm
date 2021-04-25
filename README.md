@@ -86,7 +86,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - DAA
         - DEX
         - DEY
-        - EOR
         - FDIV
         - IDIV
         - INS
