@@ -743,13 +743,17 @@ void INST_BVS(cpu *cpu) {
     }
 }
 
-void INST_TAB(cpu *cpu) {
+void INST_TAB_INH(cpu *cpu) {
     cpu->b = cpu->a;
     SET_FLAGS(cpu, cpu->b, ZERO | NEG);
     cpu->v = 0;
 }
 
-void INST_TBA(cpu *cpu) {
+void INST_TAP_INH(cpu *cpu) {
+    cpu->status = cpu->a;
+}
+
+void INST_TBA_INH(cpu *cpu) {
     cpu->a = cpu->b;
     SET_FLAGS(cpu, cpu->b, ZERO | NEG);
     cpu->v = 0;
@@ -1376,13 +1380,19 @@ instruction instructions[] = {
     {
         .names = {"tab"}, .name_count = 1,
         .codes = {[INHERENT]=0x16},
-        .func = {[INHERENT]=INST_TAB},
+        .func = {[INHERENT]=INST_TAB_INH},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"tap"}, .name_count = 1,
+        .codes = {[INHERENT]=0x06},
+        .func = {[INHERENT]=INST_TAP_INH},
         .operands = { INHERENT }
     },
     {
         .names = {"tba"}, .name_count = 1,
         .codes = {[INHERENT]=0x17},
-        .func = {[INHERENT]=INST_TBA},
+        .func = {[INHERENT]=INST_TBA_INH},
         .operands = { INHERENT }
     },
     {

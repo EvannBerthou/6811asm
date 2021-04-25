@@ -110,7 +110,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - STX
         - STY
         - SWI
-        - TAP
         - TEST
         - TSX
         - TSY
