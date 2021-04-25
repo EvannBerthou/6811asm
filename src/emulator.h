@@ -1105,6 +1105,27 @@ void INST_TPA_INH(cpu *cpu) {
     cpu->a = cpu->status;
 }
 
+void INST_TST_EXT(cpu *cpu) {
+    uint8_t v = EXT_WORD(cpu);
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->c = 0;
+}
+
+void INST_TSTA_INH(cpu *cpu) {
+    uint8_t v = cpu->a;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->c = 0;
+
+}
+void INST_TSTB_INH(cpu *cpu) {
+    uint8_t v = cpu->b;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+    cpu->c = 0;
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1658,6 +1679,144 @@ instruction instructions[] = {
         .codes = {[INHERENT]=0x07},
         .func =  {[INHERENT]=INST_TPA_INH},
         .operands = { INHERENT },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x7D},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tsta"}, .name_count = 1,
+        .codes = {[INHERENT]=0x4D},
+        .func =  {[INHERENT]=INST_TSTA_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[INHERENT]=0x5D},
+        .func =  {[INHERENT]=INST_TSTB_INH},
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"tst"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x07},
+        .func =  {[EXTENDED]=INST_TST_EXT},
+        .operands = { EXTENDED },
     },
 };
 
