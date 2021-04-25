@@ -1235,6 +1235,12 @@ void INST_INS_INH(cpu *cpu) {
     cpu->sp++;
 }
 
+void INST_SBA_INH(cpu *cpu) {
+    u8 a = cpu->a;
+    u8 b = cpu->b;
+    SET_CMP_FLAGS(cpu, a, b);
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1976,7 +1982,12 @@ instruction instructions[] = {
         .func =  { [INHERENT]=INST_INS_INH },
         .operands = { INHERENT },
     },
-
+    {
+        .names = {"sba"}, .name_count = 1,
+        .codes = {[INHERENT]=0x10},
+        .func =  { [INHERENT]=INST_SBA_INH },
+        .operands = { INHERENT },
+    },
 };
 
 #define INSTRUCTION_COUNT ((u8)(sizeof(instructions) / sizeof(instructions[0])))

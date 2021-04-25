@@ -80,7 +80,7 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - BRSET
         - BSET
         - BSR
-        - CPD
+        - CPD (Requires 2 opcodes)
         - CPX
         - CPY
         - DAA
@@ -101,7 +101,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - ROL
         - ROR
         - RTI
-        - SBA
         - SBC
         - STD
         - STOP
