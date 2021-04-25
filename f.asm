@@ -1,15 +1,10 @@
 START equ $C015
 
     org START
-    lda #$05
-    deca
-    deca
-    deca
-    deca
-    deca
-    deca
-    deca
-; Gives 0xFF - 0x5 = 0xFA
+    lda #$03
+    ldb #$02
+    mul
+; Gives 0x3 * 0x2 = 0x6
 
 
 boucle

@@ -1077,6 +1077,12 @@ void INST_JMP_EXT(cpu *cpu) {
     cpu->pc = EXT_WORD16(cpu);
 }
 
+void INST_MUL_INH(cpu *cpu) {
+    uint32_t result = cpu->a * cpu->b;
+    cpu->d = result & 0xFFFF;
+    SET_FLAGS(cpu, result, CARRY);
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -1605,10 +1611,16 @@ instruction instructions[] = {
         .operands = { INHERENT },
     },
     {
-        .names = {"clv"}, .name_count = 1,
+        .names = {"jmp"}, .name_count = 1,
         .codes = {[EXTENDED]=0x7E},
         .func =  {[EXTENDED]=INST_JMP_EXT},
         .operands = { EXTENDED },
+    },
+    {
+        .names = {"mul"}, .name_count = 1,
+        .codes = {[INHERENT]=0x3D},
+        .func =  {[INHERENT]=INST_MUL_INH},
+        .operands = { INHERENT },
     },
 };
 
