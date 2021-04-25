@@ -158,6 +158,14 @@ void (*instr_func[0x100]) (cpu *cpu) = {0};
 /*****************************
 *        Instructions        *
 *****************************/
+uint16_t join(uint8_t a, uint8_t b) {
+    return (a << 8) | b;
+}
+
+// Returns addr and addr + 1 in a single value
+uint16_t join_addr(cpu *cpu, uint8_t addr) {
+    return join(cpu->memory[addr], cpu->memory[addr + 1]);
+}
 
 uint8_t NEXT8(cpu *cpu) {
     return cpu->memory[++cpu->pc];
@@ -166,8 +174,7 @@ uint8_t NEXT8(cpu *cpu) {
 uint16_t NEXT16(cpu *cpu) {
     uint8_t b0 = NEXT8(cpu); // high order byte
     uint8_t b1 = NEXT8(cpu); // low order byte
-    uint16_t joined = (b0 << 8) | b1;
-    return joined;
+    return join(b0, b1);
 }
 
 uint8_t DIR_WORD(cpu *cpu) {
@@ -181,7 +188,7 @@ uint16_t DIR_WORD16(cpu *cpu) {
     // Get values of the next operands
     uint8_t addr = NEXT8(cpu);
     // Get value the operand is poiting at
-    return (cpu->memory[addr] << 8) | cpu->memory[addr + 1];
+    return join_addr(cpu, addr);
 }
 
 uint8_t EXT_WORD(cpu *cpu) {
@@ -190,7 +197,7 @@ uint8_t EXT_WORD(cpu *cpu) {
 
 uint16_t EXT_WORD16(cpu *cpu) {
     uint16_t addr = NEXT16(cpu);
-    return (cpu->memory[addr] << 8) | cpu->memory[addr + 1];
+    return join_addr(cpu, addr);
 }
 
 uint8_t STACK_POP8(cpu *cpu) {
@@ -201,7 +208,7 @@ uint8_t STACK_POP8(cpu *cpu) {
 uint16_t STACK_POP16(cpu *cpu) {
     uint8_t v1 = STACK_POP8(cpu);
     uint8_t v2 = STACK_POP8(cpu);
-    return (v1 << 8) | v2;
+    return join(v1, v2);
 }
 
 void STACK_PUSH8(cpu *cpu, uint8_t v) {
@@ -357,9 +364,7 @@ void INST_LDD_EXT(cpu *cpu) {
         cpu->d = port_val;
         SET_LD_FLAGS(cpu, port_val);
     } else {
-        uint8_t a = cpu->memory[addr];
-        uint8_t b = cpu->memory[addr + 1];
-        uint16_t value = (a << 8) | b;
+        uint16_t value = join_addr(cpu, addr);
         cpu->d = value;
         SET_LD_FLAGS(cpu, value);
     }
@@ -471,7 +476,7 @@ void INST_ADDD_DIR(cpu *cpu) {
 
 void INST_ADDD_EXT(cpu *cpu) {
     uint16_t addr = NEXT16(cpu);
-    uint16_t v = (cpu->memory[addr] << 8) | cpu->memory[addr + 1];
+    uint16_t v = join_addr(cpu, addr);
     int32_t result = cpu->d + v;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
