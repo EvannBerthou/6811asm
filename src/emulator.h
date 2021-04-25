@@ -1119,11 +1119,66 @@ void INST_TSTA_INH(cpu *cpu) {
     cpu->c = 0;
 
 }
+
 void INST_TSTB_INH(cpu *cpu) {
     uint8_t v = cpu->b;
     SET_FLAGS(cpu, v, NEG | ZERO);
     cpu->v = 0;
     cpu->c = 0;
+}
+
+void INST_EORA_IMM(cpu *cpu) {
+    uint8_t a = cpu->a;
+    uint8_t v = NEXT8(cpu);
+    uint8_t result = a ^ v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_EORA_DIR(cpu *cpu) {
+    uint8_t a = cpu->a;
+    uint8_t v = DIR_WORD(cpu);
+    uint8_t result = a ^ v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_EORA_EXT(cpu *cpu) {
+    uint8_t a = cpu->a;
+    uint8_t v = EXT_WORD(cpu);
+    uint8_t result = a ^ v;
+    cpu->a = result & 0xFF;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_EORB_IMM(cpu *cpu) {
+    uint8_t b = cpu->b;
+    uint8_t v = NEXT8(cpu);
+    uint8_t result = b ^ v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_EORB_DIR(cpu *cpu) {
+    uint8_t b = cpu->b;
+    uint8_t v = DIR_WORD(cpu);
+    uint8_t result = b ^ v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
+}
+
+void INST_EORB_EXT(cpu *cpu) {
+    uint8_t b = cpu->b;
+    uint8_t v = EXT_WORD(cpu);
+    uint8_t result = b ^ v;
+    cpu->b = result & 0xFF;
+    SET_FLAGS(cpu, v, NEG | ZERO);
+    cpu->v = 0;
 }
 
 instruction instructions[] = {
@@ -1817,6 +1872,26 @@ instruction instructions[] = {
         .codes = {[EXTENDED]=0x07},
         .func =  {[EXTENDED]=INST_TST_EXT},
         .operands = { EXTENDED },
+    },
+    {
+        .names = {"eora"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0x88,[DIRECT]=0x98,[EXTENDED]=0xB8},
+        .func =  {
+            [IMMEDIATE]=INST_EORA_IMM,
+            [DIRECT]=INST_EORA_DIR,
+            [EXTENDED]=INST_EORA_EXT
+        },
+        .operands = { IMMEDIATE, DIRECT, EXTENDED },
+    },
+    {
+        .names = {"eorb"}, .name_count = 1,
+        .codes = {[IMMEDIATE]=0xC8,[DIRECT]=0xD8,[EXTENDED]=0xF8},
+        .func =  {
+            [IMMEDIATE]=INST_EORB_IMM,
+            [DIRECT]=INST_EORB_DIR,
+            [EXTENDED]=INST_EORB_EXT
+        },
+        .operands = { IMMEDIATE, DIRECT, EXTENDED },
     },
 };
 
