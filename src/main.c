@@ -141,6 +141,15 @@ void handle_args(args *args, int argc, char **argv) {
         }
         else if (strcmp(argv[i], "--readable") == 0 || strcmp(argv[i], "-r") == 0) {
             args->readable_dump = 1;
+        }
+        else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+            printf("6611 assembly emulator (v1.0)\n"
+                   "Usage: ./run [options...]\n"
+                   "Where options are:\n"
+                   "\t--dump     -d  Dumps whole program's memory when completelly loaded.\n"
+                   "\t--readable -r  Dumps whole program's memory in a more human reable format when completelly loaded.\n"
+                   "\t--step     -s  Execute the program instruction per instruction.\n");
+            exit(0);
         } else {
             fprintf(stderr, "Unknow argument `%s`\n", argv[i]);
         }
