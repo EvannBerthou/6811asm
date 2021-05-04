@@ -6,6 +6,3 @@ START equ $C015
     mul
 ; Gives 0x3 * 0x2 = 0x6
 
-
-boucle
-    bra boucle

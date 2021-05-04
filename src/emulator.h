@@ -2003,6 +2003,11 @@ void free_cpu(cpu *cpu) {
     }
 }
 
+void desotroy_cpu(cpu *cpu) {
+    free_cpu(cpu);
+    free(cpu);
+}
+
 void add_instructions_func() {
     memset(instr_func, 0, 0x100 * sizeof(void*));
     for (u8 i = 0; i < INSTRUCTION_COUNT; ++i) {
@@ -2432,4 +2437,18 @@ void exec_program(cpu *cpu) {
         cpu->pc++;
     }
 }
+
+void init_cpu(cpu *cpu, const char *fn) {
+    add_instructions_func();
+    set_default_ddr(cpu);
+    load_program(cpu, fn);
+}
+
+cpu *new_cpu(const char *fn) {
+    cpu *c = calloc(1, sizeof(cpu));
+    init_cpu(c, fn);
+    return c;
+}
+
 #endif // EMULATOR_IMPLEMENTATION
+

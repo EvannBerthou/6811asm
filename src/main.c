@@ -179,20 +179,16 @@ int main(int argc, char **argv) {
     args args = {0};
     handle_args(&args, argc, argv);
 
-    add_instructions_func();
-
-    cpu c = (cpu) {0};
-    set_default_ddr(&c);
-    load_program(&c, "f.asm");
+    cpu *c = new_cpu("f.asm");
 
     if (args.dump) {
-        dump_memory(&c, &args);
+        dump_memory(c, &args);
     } else {
         if (args.step) {
-            exec_program_step(&c);
+            exec_program_step(c);
         } else {
-            exec_program(&c);
+            exec_program(c);
         }
     }
-    free_cpu(&c);
+    desotroy_cpu(c);
 }
