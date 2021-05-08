@@ -867,26 +867,31 @@ void INST_LDS_EXT(cpu *cpu) {
 
 void INST_LSL_EXT(cpu *cpu) {
     u16 addr = NEXT16(cpu);
-    u16 res = cpu->memory[addr] << 1;
-    SET_FLAGS(cpu, res, CARRY | OFLOW | NEG | ZERO);
+    u8 v = cpu->memory[addr];
+    u16 res = v << 1;
+    SET_FLAGS(cpu, res, OFLOW | NEG | ZERO);
+    cpu->c = (v >> 0xF) & 1;
     cpu->memory[addr] = res & 0xFF;
 }
 
 void INST_LSLA_INH(cpu *cpu) {
     u16 res = cpu->a << 1;
-    SET_FLAGS(cpu, res, CARRY | OFLOW | NEG | ZERO);
+    SET_FLAGS(cpu, res, OFLOW | NEG | ZERO);
+    cpu->c = (cpu->a >> 7) & 1;
     cpu->a = res & 0xFF;
 }
 
 void INST_LSLB_INH(cpu *cpu) {
     u16 res = cpu->b << 1;
-    SET_FLAGS(cpu, res, CARRY | OFLOW | NEG | ZERO);
+    SET_FLAGS(cpu, res, OFLOW | NEG | ZERO);
+    cpu->c = (cpu->d >> 7) & 1;
     cpu->b = res & 0xFF;
 }
 
 void INST_LSLD_INH(cpu *cpu) {
     u32 res = cpu->d << 1;
-    SET_FLAGS(cpu, res, CARRY | OFLOW | NEG | ZERO);
+    SET_FLAGS(cpu, res, OFLOW | NEG | ZERO);
+    cpu->c = (cpu->d >> 15) & 1;
     cpu->d = res & 0xFFFF;
 }
 
