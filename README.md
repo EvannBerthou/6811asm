@@ -92,8 +92,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - INY
         - LDX
         - LDY
-        - LSR
-        - LSRD
         - PSHY (Requires 2 opcodes)
         - PULY (Requires 2 opcodes)
         - ROL
