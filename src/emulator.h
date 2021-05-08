@@ -18,6 +18,7 @@
 #define u16 uint16_t
 #define i8 int8_t
 #define i16 int16_t
+#define u32 uint32_t
 
 typedef enum {
     NONE,
@@ -98,7 +99,7 @@ typedef struct {
 
 #define INFO(f_, ...) printf("[INFO] "f_"\n", __VA_ARGS__)
 
-static uint32_t file_line = 0;
+static u32 file_line = 0;
 
 typedef enum {
     CARRY = 0x1,
@@ -538,7 +539,7 @@ void INST_ANDB_EXT(cpu *cpu) {
 void INST_ASL_EXT(cpu *cpu) {
     u16 addr = NEXT16(cpu);
     u16 v = cpu->memory[addr];
-    uint32_t result = (v << 1);
+    u32 result = (v << 1);
     cpu->memory[addr] = result & 0xFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
@@ -556,7 +557,7 @@ void INST_ASLB_INH(cpu *cpu) {
 }
 
 void INST_ASLD_INH(cpu *cpu) {
-    uint32_t result = cpu->d << 1;
+    u32 result = cpu->d << 1;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
@@ -864,6 +865,31 @@ void INST_LDS_EXT(cpu *cpu) {
     cpu->sp = v;
 }
 
+void INST_LSL_EXT(cpu *cpu) {
+    u16 addr = NEXT16(cpu);
+    u16 res = cpu->memory[addr] << 1;
+    SET_FLAGS(cpu, res, CARRY | OFLOW | NEG | ZERO);
+    cpu->memory[addr] = res & 0xFF;
+}
+
+void INST_LSLA_INH(cpu *cpu) {
+    u16 res = cpu->a << 1;
+    SET_FLAGS(cpu, res, CARRY | OFLOW | NEG | ZERO);
+    cpu->a = res & 0xFF;
+}
+
+void INST_LSLB_INH(cpu *cpu) {
+    u16 res = cpu->b << 1;
+    SET_FLAGS(cpu, res, CARRY | OFLOW | NEG | ZERO);
+    cpu->b = res & 0xFF;
+}
+
+void INST_LSLD_INH(cpu *cpu) {
+    u32 res = cpu->d << 1;
+    SET_FLAGS(cpu, res, CARRY | OFLOW | NEG | ZERO);
+    cpu->d = res & 0xFFFF;
+}
+
 void INST_RTS_INH(cpu *cpu) {
     u16 ret_addr = STACK_POP16(cpu);
     cpu->pc = ret_addr;
@@ -1128,13 +1154,13 @@ void INST_JMP_EXT(cpu *cpu) {
 }
 
 void INST_MUL_INH(cpu *cpu) {
-    uint32_t result = cpu->a * cpu->b;
+    u32 result = cpu->a * cpu->b;
     cpu->d = result & 0xFFFF;
     SET_FLAGS(cpu, result, CARRY);
 }
 
 void INST_STS_DIR(cpu *cpu) {
-    uint32_t result = cpu->sp;
+    u32 result = cpu->sp;
     u8 addr = NEXT8(cpu);
     cpu->memory[addr]     = (cpu->sp >> 8) & 0xFF;
     cpu->memory[addr + 1] = cpu->sp & 0xFF;
@@ -1143,7 +1169,7 @@ void INST_STS_DIR(cpu *cpu) {
 }
 
 void INST_STS_EXT(cpu *cpu) {
-    uint32_t result = cpu->sp;
+    u32 result = cpu->sp;
     u16 addr = NEXT16(cpu);
     cpu->memory[addr]     = (cpu->sp >> 8) & 0xFF;
     cpu->memory[addr + 1] = cpu->sp & 0xFF;
@@ -1589,6 +1615,30 @@ instruction instructions[] = {
         .operands = { NONE }
     },
     {
+        .names = {"lsl"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x78},
+        .func = { [EXTENDED]=INST_LSL_EXT },
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"lsla"}, .name_count = 1,
+        .codes = {[INHERENT]=0x48},
+        .func = { [INHERENT]=INST_LSLA_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"lslb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x58},
+        .func = { [INHERENT]=INST_LSLB_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"lsld"}, .name_count = 1,
+        .codes = {[INHERENT]=0x05},
+        .func = { [INHERENT]=INST_LSLD_INH },
+        .operands = { INHERENT },
+    },
+    {
         .names = {"lds"}, .name_count = 1,
         .codes = {[IMMEDIATE]=0x8E, [DIRECT]=0x9E,[EXTENDED]=0xBE},
         .func = {
@@ -1988,6 +2038,7 @@ instruction instructions[] = {
         .func =  { [INHERENT]=INST_SBA_INH },
         .operands = { INHERENT },
     },
+
 };
 
 #define INSTRUCTION_COUNT ((u8)(sizeof(instructions) / sizeof(instructions[0])))
