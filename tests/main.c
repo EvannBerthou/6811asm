@@ -44,7 +44,7 @@ int main() {
         ASSERT(cmp_mnemonic(&m5, &e5));
     }*/
 
-    TEST ("LSL and LSR tests") {
+    TEST ("Shift tests tests") {
         cpu.a = 0xFF;
         mnemonic m = line_to_mnemonic((char[]){" lsla"}, NULL, 0, 0);
         exec_instr(&cpu, m.opcode);
@@ -56,6 +56,21 @@ int main() {
         exec_instr(&cpu, m.opcode);
         ASSERT_EQ(cpu.d, (0xFFF0 >> 1));
         ASSERT_EQ(cpu.c, 0);
+
+        cpu.c = 1;
+        cpu.a = 0x7F;
+        m = line_to_mnemonic((char[]){" rora"}, NULL, 0, 0);
+        exec_instr(&cpu, m.opcode);
+        ASSERT_EQ(cpu.a, (0x7F >> 1) | (cpu.c << 7));
+        ASSERT_EQ(cpu.c, 1);
+
+        cpu.c = 1;
+        cpu.a = 0x0;
+        m = line_to_mnemonic((char[]){" rola"}, NULL, 0, 0);
+        exec_instr(&cpu, m.opcode);
+        ASSERT_EQ(cpu.a, 1);
+        ASSERT_EQ(cpu.c, 0);
+
     }
 
     return 0;

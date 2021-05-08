@@ -924,6 +924,46 @@ void INST_LSRD_INH(cpu *cpu) {
     cpu->d = res & 0xFFFF;
 }
 
+void INST_ROL_EXT(cpu *cpu) {
+    u16 addr = NEXT16(cpu);
+    u8 v = cpu->memory[addr];
+    u16 res = (v << 1) | cpu->c;
+    SET_SHIFT_FLAGS(cpu, res, v, 7);
+    cpu->memory[addr] = res & 0xFF;
+}
+
+void INST_ROLA_INH(cpu *cpu) {
+    u16 res = (cpu->a << 1) | cpu->c;
+    SET_SHIFT_FLAGS(cpu, res, cpu->a, 7);
+    cpu->a = res & 0xFF;
+}
+
+void INST_ROLB_INH(cpu *cpu) {
+    u16 res = (cpu->b << 1) | cpu->c;
+    SET_SHIFT_FLAGS(cpu, res, cpu->b, 7);
+    cpu->b = res & 0xFF;
+}
+
+void INST_ROR_EXT(cpu *cpu) {
+    u16 addr = NEXT16(cpu);
+    u8 v = cpu->memory[addr];
+    u16 res = (v >> 1) | (cpu->c << 7);
+    SET_SHIFT_FLAGS(cpu, res, v, 0);
+    cpu->memory[addr] = res & 0xFF;
+}
+
+void INST_RORA_INH(cpu *cpu) {
+    u16 res = (cpu->a >> 1) | (cpu->c << 7);
+    SET_SHIFT_FLAGS(cpu, res, cpu->a, 0);
+    cpu->a = res & 0xFF;
+}
+
+void INST_RORB_INH(cpu *cpu) {
+    u16 res = (cpu->b >> 1) | (cpu->c << 7);
+    SET_SHIFT_FLAGS(cpu, res, cpu->b, 0);
+    cpu->b = res & 0xFF;
+}
+
 void INST_RTS_INH(cpu *cpu) {
     u16 ret_addr = STACK_POP16(cpu);
     cpu->pc = ret_addr;
@@ -1694,6 +1734,42 @@ instruction instructions[] = {
         .names = {"lsrd"}, .name_count = 1,
         .codes = {[INHERENT]=0x04},
         .func = { [INHERENT]=INST_LSRD_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"rol"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x79},
+        .func = { [EXTENDED]=INST_ROL_EXT },
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"rola"}, .name_count = 1,
+        .codes = {[INHERENT]=0x49},
+        .func = { [INHERENT]=INST_ROLA_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"rolb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x59},
+        .func = { [INHERENT]=INST_ROLB_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"ror"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x76},
+        .func = { [EXTENDED]=INST_ROR_EXT },
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"rora"}, .name_count = 1,
+        .codes = {[INHERENT]=0x46},
+        .func = { [INHERENT]=INST_RORA_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"rorb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x56},
+        .func = { [INHERENT]=INST_RORB_INH },
         .operands = { INHERENT },
     },
     {
