@@ -865,33 +865,62 @@ void INST_LDS_EXT(cpu *cpu) {
     cpu->sp = v;
 }
 
+static inline void SET_SHIFT_FLAGS(cpu *cpu, u32 res, u16 base, u16 offset) {
+    cpu->n = (res >> offset) & 1;
+    cpu->z = res == 0;
+    cpu->c = (base >> offset) & 1;
+    cpu->v = cpu->n ^ cpu->c;
+}
+
 void INST_LSL_EXT(cpu *cpu) {
     u16 addr = NEXT16(cpu);
     u8 v = cpu->memory[addr];
     u16 res = v << 1;
-    SET_FLAGS(cpu, res, OFLOW | NEG | ZERO);
-    cpu->c = (v >> 0xF) & 1;
+    SET_SHIFT_FLAGS(cpu, res, v, 7);
     cpu->memory[addr] = res & 0xFF;
 }
 
 void INST_LSLA_INH(cpu *cpu) {
     u16 res = cpu->a << 1;
-    SET_FLAGS(cpu, res, OFLOW | NEG | ZERO);
-    cpu->c = (cpu->a >> 7) & 1;
+    SET_SHIFT_FLAGS(cpu, res, cpu->a, 7);
     cpu->a = res & 0xFF;
 }
 
 void INST_LSLB_INH(cpu *cpu) {
     u16 res = cpu->b << 1;
-    SET_FLAGS(cpu, res, OFLOW | NEG | ZERO);
-    cpu->c = (cpu->d >> 7) & 1;
+    SET_SHIFT_FLAGS(cpu, res, cpu->b, 7);
     cpu->b = res & 0xFF;
 }
 
 void INST_LSLD_INH(cpu *cpu) {
     u32 res = cpu->d << 1;
-    SET_FLAGS(cpu, res, OFLOW | NEG | ZERO);
-    cpu->c = (cpu->d >> 15) & 1;
+    SET_SHIFT_FLAGS(cpu, res, cpu->b, 15);
+    cpu->d = res & 0xFFFF;
+}
+
+void INST_LSR_EXT(cpu *cpu) {
+    u16 addr = NEXT16(cpu);
+    u8 v = cpu->memory[addr];
+    u16 res = v >> 1;
+    SET_SHIFT_FLAGS(cpu, res, v, 0);
+    cpu->memory[addr] = res & 0xFF;
+}
+
+void INST_LSRA_INH(cpu *cpu) {
+    u16 res = cpu->a >> 1;
+    SET_SHIFT_FLAGS(cpu, res, cpu->a, 0);
+    cpu->a = res & 0xFF;
+}
+
+void INST_LSRB_INH(cpu *cpu) {
+    u16 res = cpu->b >> 1;
+    SET_SHIFT_FLAGS(cpu, res, cpu->b, 0);
+    cpu->b = res & 0xFF;
+}
+
+void INST_LSRD_INH(cpu *cpu) {
+    u32 res = cpu->d >> 1;
+    SET_SHIFT_FLAGS(cpu, res, cpu->d, 0);
     cpu->d = res & 0xFFFF;
 }
 
@@ -1641,6 +1670,30 @@ instruction instructions[] = {
         .names = {"lsld"}, .name_count = 1,
         .codes = {[INHERENT]=0x05},
         .func = { [INHERENT]=INST_LSLD_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"lsr"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x74},
+        .func = { [EXTENDED]=INST_LSR_EXT },
+        .operands = { EXTENDED },
+    },
+    {
+        .names = {"lsra"}, .name_count = 1,
+        .codes = {[INHERENT]=0x44},
+        .func = { [INHERENT]=INST_LSRA_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"lsrb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x54},
+        .func = { [INHERENT]=INST_LSRB_INH },
+        .operands = { INHERENT },
+    },
+    {
+        .names = {"lsrd"}, .name_count = 1,
+        .codes = {[INHERENT]=0x04},
+        .func = { [INHERENT]=INST_LSRD_INH },
         .operands = { INHERENT },
     },
     {
