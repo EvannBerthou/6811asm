@@ -71,7 +71,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - FDB
         - FILL
     - Implémentation de toutes les instructions
-        - ASR
         - BCLR
         - BIT
         - BRCLR
@@ -84,7 +83,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - IDIV
         - RTI
         - SBC
-        - STD
         - STOP
         - SWI
         - TEST

@@ -598,13 +598,6 @@ void INST_ASR_EXT(cpu *cpu) {
     cpu->v = cpu->n ^ cpu->c;
 }
 
-void INST_STA_DIR(cpu *cpu) {
-    u8 addr = NEXT8(cpu);
-    cpu->memory[addr] = cpu->a;
-    SET_FLAGS(cpu, cpu->a, ZERO | NEG);
-    cpu->v = 0;
-}
-
 u8 WRITE_TO_PORTS(cpu *cpu, u16 addr) {
     if (addr == PORTA_ADDR) { // PORT A
         cpu->ports[PORTA] = cpu->a & cpu->memory[DDRA]; // Only write where bits are in output mode
@@ -652,6 +645,14 @@ u8 WRITE_TO_PORTS(cpu *cpu, u16 addr) {
     return 0;
 }
 
+void INST_STA_DIR(cpu *cpu) {
+    u8 addr = NEXT8(cpu);
+    cpu->memory[addr] = cpu->a;
+    SET_FLAGS(cpu, cpu->a, ZERO | NEG);
+    cpu->v = 0;
+}
+
+
 void INST_STA_EXT(cpu *cpu) {
     u16 addr = NEXT16(cpu);
     if (!WRITE_TO_PORTS(cpu, addr)) {
@@ -672,6 +673,26 @@ void INST_STB_EXT(cpu *cpu) {
     u16 addr = NEXT16(cpu);
     if (!WRITE_TO_PORTS(cpu, addr)) {
         cpu->memory[addr] = cpu->b;
+    }
+    SET_FLAGS(cpu, cpu->a, ZERO | NEG);
+    cpu->v = 0;
+}
+
+void INST_STD_DIR(cpu *cpu) {
+    u8 addr = NEXT8(cpu);
+    if (!WRITE_TO_PORTS(cpu, addr)) {
+        cpu->memory[addr + 0] = cpu->a;
+        cpu->memory[addr + 1] = cpu->b;
+    }
+    SET_FLAGS(cpu, cpu->a, ZERO | NEG);
+    cpu->v = 0;
+}
+
+void INST_STD_EXT(cpu *cpu) {
+    u16 addr = NEXT16(cpu);
+    if (!WRITE_TO_PORTS(cpu, addr)) {
+        cpu->memory[addr + 0] = cpu->a;
+        cpu->memory[addr + 1] = cpu->b;
     }
     SET_FLAGS(cpu, cpu->a, ZERO | NEG);
     cpu->v = 0;
@@ -1424,6 +1445,15 @@ instruction instructions[] = {
         .func = {
             [DIRECT]=INST_STB_DIR,
             [EXTENDED]=INST_STB_EXT,
+        },
+        .operands = { DIRECT, EXTENDED }
+    },
+    {
+        .names = {"std"}, .name_count = 1,
+        .codes = {[DIRECT]=0xDD, [EXTENDED]=0xFD},
+        .func = {
+            [DIRECT]=INST_STD_DIR,
+            [EXTENDED]=INST_STD_EXT,
         },
         .operands = { DIRECT, EXTENDED }
     },
