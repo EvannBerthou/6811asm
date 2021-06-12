@@ -562,6 +562,42 @@ void INST_ASLD_INH(cpu *cpu) {
     SET_FLAGS(cpu, result, CARRY | OFLOW | ZERO | NEG);
 }
 
+void INST_ASRA_INH(cpu *cpu) {
+    u8 msb = (cpu->a >> 7) & 1;
+    u32 result = cpu->a >> 1;
+    result |= msb << 7;
+    cpu->a = result;
+
+    cpu->c = result & 1;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = cpu->n ^ cpu->c;
+}
+
+void INST_ASRB_INH(cpu *cpu) {
+    u8 msb = (cpu->b >> 7) & 1;
+    u32 result = cpu->b >> 1;
+    result |= msb << 7;
+    cpu->b = result;
+
+    cpu->c = result & 1;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = cpu->n ^ cpu->c;
+}
+
+void INST_ASR_EXT(cpu *cpu) {
+    u16 addr = NEXT16(cpu);
+    u8 m = cpu->memory[addr];
+
+    u8 msb = (m >> 7) & 1;
+    u32 result = m >> 1;
+    result |= msb << 7;
+    cpu->memory[addr] = result;
+
+    cpu->c = result & 1;
+    SET_FLAGS(cpu, result, ZERO | NEG);
+    cpu->v = cpu->n ^ cpu->c;
+}
+
 void INST_STA_DIR(cpu *cpu) {
     u8 addr = NEXT8(cpu);
     cpu->memory[addr] = cpu->a;
@@ -1490,6 +1526,24 @@ instruction instructions[] = {
         .names = {"asld"}, .name_count = 1,
         .codes = {[INHERENT]=0x05},
         .func =  {[INHERENT]=INST_ASLD_INH},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"asr"}, .name_count = 1,
+        .codes = {[EXTENDED]=0x77},
+        .func =  {[EXTENDED]=INST_ASR_EXT},
+        .operands = { EXTENDED }
+    },
+    {
+        .names = {"asra"}, .name_count = 1,
+        .codes = {[INHERENT]=0x47},
+        .func =  {[INHERENT]=INST_ASRA_INH},
+        .operands = { INHERENT }
+    },
+    {
+        .names = {"asrb"}, .name_count = 1,
+        .codes = {[INHERENT]=0x57},
+        .func =  {[INHERENT]=INST_ASRB_INH},
         .operands = { INHERENT }
     },
     {

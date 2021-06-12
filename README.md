@@ -71,8 +71,6 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - FDB
         - FILL
     - Implémentation de toutes les instructions
-        - ABX
-        - ABY
         - ASR
         - BCLR
         - BIT
@@ -81,34 +79,39 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
         - BSET
         - BSR
         - CPD (Requires 2 opcodes)
-        - CPX
-        - CPY
         - DAA
-        - DEX
-        - DEY
         - FDIV
         - IDIV
+        - RTI
+        - SBC
+        - STD
+        - STOP
+        - SWI
+        - TEST
+        - WAI
+
+    - Requires X,Y:
+        - ABX
+        - ABY
+        - CPX
+        - CPY
+        - DEX
+        - DEY
         - INX
         - INY
         - LDX
         - LDY
         - PSHY (Requires 2 opcodes)
         - PULY (Requires 2 opcodes)
-        - RTI
-        - SBC
-        - STD
-        - STOP
         - STX
         - STY
-        - SWI
-        - TEST
         - TSX
         - TSY
         - TXS
         - TYS
-        - WAI
         - XGDX
         - XGDY
+
     - Interrupts
     - Half carry
     - Ajout du index x,y addressing mode
