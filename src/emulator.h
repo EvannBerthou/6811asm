@@ -806,6 +806,12 @@ void INST_BVS(cpu *cpu) {
     }
 }
 
+void INST_BSR_REL(cpu *cpu) {
+    cpu->pc += 2;
+    STACK_PUSH16(cpu, cpu->pc);
+    cpu->pc += (i8) NEXT8(cpu);
+}
+
 void INST_TAB_INH(cpu *cpu) {
     cpu->b = cpu->a;
     SET_FLAGS(cpu, cpu->b, ZERO | NEG);
@@ -1734,6 +1740,12 @@ instruction instructions[] = {
         .names = {"bvs"}, .name_count = 1,
         .codes = {[RELATIVE]=0x29},
         .func = {[RELATIVE]=INST_BVS},
+        .operands = { RELATIVE }
+    },
+    {
+        .names = {"bsr"}, .name_count = 1,
+        .codes = {[RELATIVE]=0x8D},
+        .func = {[RELATIVE]=INST_BSR_REL},
         .operands = { RELATIVE }
     },
     {
