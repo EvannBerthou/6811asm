@@ -12,16 +12,18 @@ int test_n = 0;
 
 #define TEST(name) {printf("\n");current_test = (name); test_n = 0;}
 
-#define ASSERT_EQ(x,y) test_n++; if ((x) != (y)) { printf(TEST_FAILED); printf("    Expected: '%d'. Recieved: '%d'\n", x,y); } else { printf(TEST_SUCCESS);}
+#define ASSERT_EQ(x,y) test_n++; if ((x) != (y)) { printf(TEST_FAILED); printf("    Expected: '%d'. Recieved: '%d' (%d)\n", x,y, __LINE__); } else { printf(TEST_SUCCESS);}
 
-#define ASSERT_NEQ(x,y) test_n++; if ((x) == (y)) { printf(TEST_FAILED); printf("    Expected value different to '%d'\n", x); } else { printf(TEST_SUCCESS);}
+#define ASSERT_NEQ(x,y) test_n++; if ((x) == (y)) { printf(TEST_FAILED); printf("    Expected value different to '%d' (%d)\n", x, __LINE__); } else { printf(TEST_SUCCESS);}
 
-#define ASSERT(x) test_n++; if (!(x)) { printf(TEST_FAILED); printf("    Expected: TRUE. Recieved: FALSE\n"); } else { printf(TEST_SUCCESS);}
+#define ASSERT(x) test_n++; if (!(x)) { printf(TEST_FAILED); printf("    Expected: TRUE. Recieved: FALSE (%d)\n", __LINE__); } else { printf(TEST_SUCCESS);}
 
-#define CRIT_ASSERT_EQ(x,y) test_n++; if ((x) != (y)) { printf(CRIT_TEST_FAILED); printf("    Expected: '%d'. Recieved: '%d'\n", x,y); exit(0);} else { printf(TEST_SUCCESS);}
+#define CRIT_ASSERT_EQ(x,y) test_n++; if ((x) != (y)) { printf(CRIT_TEST_FAILED); printf("    Expected: '%d'. Recieved: '%d' (%d)\n", x,y, __LINE__); exit(0);} else { printf(TEST_SUCCESS);}
 
-#define CRIT_ASSERT_NEQ(x,y) test_n++; if ((x) == (y)) { printf(CRIT_TEST_FAILED); printf("    Expected value different to '%d'\n", x); exit(0);} else { printf(TEST_SUCCESS);}
+#define CRIT_ASSERT_NEQ(x,y) test_n++; if ((x) == (y)) { printf(CRIT_TEST_FAILED); printf("    Expected value different to '%d' (%d)\n", x, __LINE__); exit(0);} else { printf(TEST_SUCCESS);}
 
-#define CRIT_ASSERT(x) test_n++; if (!(x)) { printf(CRIT_TEST_FAILED); printf("    Expected: TRUE. Recieved: FALSE\n");exit(0); } else { printf(TEST_SUCCESS);}
+#define CRIT_ASSERT(x) test_n++; if (!(x)) { printf(CRIT_TEST_FAILED); printf("    Expected: TRUE. Recieved: FALSE (%d)\n", __LINE__);exit(0); } else { printf(TEST_SUCCESS);}
+
+#define FAIL(s, ...) printf(CRIT_TEST_FAILED);printf(s, __VA_ARGS__);
 
 #endif

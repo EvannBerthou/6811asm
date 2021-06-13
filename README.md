@@ -125,4 +125,5 @@ Il est possible de donner des directives lors de la compilation. Ces instruction
 
 - Tests
     - Vérifier le parsing de toutes les instructions
+    - Vérifier que chaque instructions donne le résultat attendu une fois exécuté
     - Ecrire des programmes et vérifier que le résultat obtenu est le bon
