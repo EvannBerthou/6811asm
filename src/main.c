@@ -9,7 +9,6 @@ typedef struct {
         uint8_t readable_dump : 1;
         uint8_t print_info    : 1;
     };
-    char *dump_path;
 } args;
 
 void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
@@ -39,17 +38,7 @@ void print_cpu_state(cpu *cpu) {
 }
 
 void dump_memory(const cpu *c, args *args) {
-    FILE *output_file;
-    if (args->dump_path == NULL) {
-        output_file = stdout;
-    } else {
-        output_file = fopen(args->dump_path, "w");
-        if (!output_file) {
-            fprintf(stderr, "Error while opening file %s\n", args->dump_path);
-            exit(1);
-        }
-    }
-
+    FILE *output_file = stdout;
     for (size_t i = 0; i < MAX_MEMORY; ++i) {
         // Only print newline when the "readable dump" argument has been given
         if (args->readable_dump && i % 16 == 0 && i != 0) {
@@ -57,6 +46,7 @@ void dump_memory(const cpu *c, args *args) {
         }
         fprintf(output_file, FMT8" ", c->memory[i]);
     }
+    printf("\n");
 }
 
 void handle_commands(cpu *cpu) {
@@ -134,10 +124,6 @@ void handle_args(args *args, int argc, char **argv) {
         }
         else if (strcmp(argv[i], "--dump") == 0 || strcmp(argv[i], "-d") == 0) {
             args->dump = 1;
-            if (i + 1 < argc && argv[i + 1][0] != '-') {
-                args->dump_path = argv[i + 1];
-                ++i;
-            }
         }
         else if (strcmp(argv[i], "--readable") == 0 || strcmp(argv[i], "-r") == 0) {
             args->readable_dump = 1;
