@@ -102,16 +102,24 @@ void handle_commands(cpu *cpu) {
         } else if (strcmp(buf, "labels") == 0) {
             printf("%d labels loaded\n", cpu->label_count);
             for (int i = 0; i < cpu->label_count; ++i) {
-                printf("    %s: "FMT16"\n", cpu->labels[i].label, cpu->labels[i].operand.value);
+                printf("\t%s: "FMT16"\n", cpu->labels[i].label, cpu->labels[i].operand.value);
             }
         } else if (strcmp(buf, "ports") == 0) {
             for (int i = 0; i < MAX_PORTS; ++i) {
-                printf("    PORT%c: "FMT8"\n", 'a' + i, cpu->ports[i]);
+                printf("\tPORT%c: "FMT8"\n", 'a' + i, cpu->ports[i]);
             }
-        } else {
-            break;
         }
     }
+}
+
+void print_help() {
+    printf("6611 assembly emulator (v1.0)\n"
+            "Usage: ./run [options...]\n"
+            "Where options are:\n"
+            "\t--dump     -d  Dumps whole program's memory when completelly loaded.\n"
+            "\t--readable -r  Dumps whole program's memory in a more human reable format when completelly loaded.\n"
+            "\t--step     -s  Execute the program instruction per instruction.\n");
+    exit(0);
 }
 
 void handle_args(args *args, int argc, char **argv) {
@@ -119,6 +127,20 @@ void handle_args(args *args, int argc, char **argv) {
     argc--;
     argv++;
     for (int i = 0; i < argc; ++i) {
+        if (argv[i][0] == '-' && argv[i][1] != '-') {
+            char *str = argv[i];
+            str++; //Skip '-'
+            while (*str) {
+                switch (*str) {
+                    case 's': args->step = 1; break;
+                    case 'd': args->dump = 1; break;
+                    case 'r': args->readable_dump = 1; break;
+                    default: ERROR("Unknown argument `%c`", *str);
+                }
+                str++;
+            }
+        }
+
         if (strcmp(argv[i], "--step") == 0 || strcmp(argv[i], "-s") == 0) {
             args->step = 1;
         }
@@ -129,19 +151,15 @@ void handle_args(args *args, int argc, char **argv) {
             args->readable_dump = 1;
         }
         else if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
-            printf("6611 assembly emulator (v1.0)\n"
-                   "Usage: ./run [options...]\n"
-                   "Where options are:\n"
-                   "\t--dump     -d  Dumps whole program's memory when completelly loaded.\n"
-                   "\t--readable -r  Dumps whole program's memory in a more human reable format when completelly loaded.\n"
-                   "\t--step     -s  Execute the program instruction per instruction.\n");
-            exit(0);
+            print_help();
         } else {
             fprintf(stderr, "Unknow argument `%s`\n", argv[i]);
         }
     }
 
     if (args->readable_dump && !args->dump) {
+        args->readable_dump = 0;
+        args->dump = 0;
         INFO("%s", "--readable argument ignored as you need to use the --dump too.");
     }
 }
@@ -164,7 +182,6 @@ void exec_program_step(cpu *cpu) {
 int main(int argc, char **argv) {
     args args = {0};
     handle_args(&args, argc, argv);
-    printf("%lu\n", sizeof(cpu));
 
     cpu *c = new_cpu("f.asm");
 
