@@ -178,6 +178,7 @@ void exec_program_step(cpu *cpu) {
 int main(int argc, char **argv) {
     args args = {0};
     handle_args(&args, argc, argv);
+    printf("%lu\n", sizeof(cpu));
 
     cpu *c = new_cpu("f.asm");
 
@@ -190,5 +191,5 @@ int main(int argc, char **argv) {
             exec_program(c);
         }
     }
-    desotroy_cpu(c);
+    destroy_cpu(c);
 }

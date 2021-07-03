@@ -68,7 +68,7 @@ int main() {
         ASSERT(cmp_mnemonic(&m, &e));
 
         //LDB
-        strcopy(&s, " ldb #$FFFF");
+        strcopy(&s, " ldb #$FF");
         m = line_to_mnemonic(s, NULL, 0, 0);
         e = new_mnemonic(0xC6, 0xFF, IMMEDIATE, 0);
         ASSERT(cmp_mnemonic(&m, &e));
@@ -100,11 +100,6 @@ int main() {
         ASSERT(cmp_mnemonic(&m, &e));
 
         //STA
-        strcopy(&s, " sta #$FFFF");
-        m = line_to_mnemonic(s, NULL, 0, 0);
-        e = new_mnemonic(0xCC, 0xFFFF, IMMEDIATE, 0);
-        ASSERT(cmp_mnemonic(&m, &e));
-
         strcopy(&s, " ldd <$FF");
         m = line_to_mnemonic(s, NULL, 0, 0);
         e = new_mnemonic(0xDC, 0xFF, DIRECT, 0);

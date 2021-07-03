@@ -2284,7 +2284,7 @@ void free_cpu(cpu *cpu) {
     }
 }
 
-void desotroy_cpu(cpu *cpu) {
+void destroy_cpu(cpu *cpu) {
     free_cpu(cpu);
     free(cpu);
 }
@@ -2555,7 +2555,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 add
             } else {
                 if (result.operand.value > 0xFF) {
                     ERROR("Relative addressing mode only supports 8 bits operands ("FMT16">0xFF)",
-                          result.operand.value);
+                            result.operand.value);
                 }
             }
             result.operand.type = RELATIVE;
