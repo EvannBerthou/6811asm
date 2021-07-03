@@ -11,6 +11,42 @@ typedef struct {
     };
 } args;
 
+typedef enum {
+    NO_COMMAND = 0,
+    REGISTER_A,
+    REGISTER_B,
+    REGISTER_D,
+    NEXT,
+    PREVIOUS,
+    STATUS,
+    PC,
+    SP,
+    LABELS,
+    PORTS,
+    CONTINUE,
+    COMMAND_COUNT
+} command_type;
+
+typedef struct {
+    const char *name;
+    const char *sh_name; // Short name
+    const command_type type;
+} command;
+
+const command commands[] = {
+    {"registera", "ra", REGISTER_A},
+    {"registerb", "rb", REGISTER_B},
+    {"registerd", "rd", REGISTER_D},
+    {"next", "n", NEXT},
+    {"previous", "p", PREVIOUS},
+    {"status", "s", STATUS},
+    {"pc", NULL, PC},
+    {"SP", NULL, SP},
+    {"labels", "ls", LABELS},
+    {"ports", "ps", PORTS},
+    {"continue", "c", CONTINUE},
+};
+
 void print_memory_range(cpu *cpu, uint16_t from, uint16_t len) {
     for (uint16_t i = from; i < from + len; ++i) {
         printf("%04x: %02x\n", i, cpu->memory[i]);
@@ -49,65 +85,105 @@ void dump_memory(const cpu *c, args *args) {
     printf("\n");
 }
 
+static int cmp_name(const char *s1, const char *s2) {
+    while (*s1 || *s2) {
+        if (*s1 == ' ') return 1;
+        if (*s1 != *s2) return 0;
+        s1++;
+        s2++;
+    }
+    return 1;
+}
+
 void handle_commands(cpu *cpu) {
+    static command_type last_type = NO_COMMAND;
+    static int last_arg = 0xFFFF;
     while (1) {
         char buf[20] = {0};
         printf("> ");
         if (fgets(buf, 20, stdin) == NULL) {
             exit(1);
         }
+
         // Removes new line
         buf[strcspn(buf, "\n")] = '\0';
-        if (strcmp(buf, "ra") == 0) {
-            printf("Register A: "FMT8"\n", cpu->a);
-        } else if (strcmp(buf, "rb") == 0) {
-            printf("Register B: "FMT8"\n", cpu->b);
-        } else if (strcmp(buf, "rd") == 0) {
-            printf("Register D: "FMT16"\n", cpu->d);
-        } else if (str_prefix(buf, "next")) {
-            const char *arg = buf + strlen("next");
-            char *end;
-            long l = strtol(arg, &end, 0);
-            if (l == 0 && arg == end) {
-                printf("Invalid argument\n");
-                continue;
+        
+        command_type cmd_type = NO_COMMAND;
+        for (size_t i = 0; i < COMMAND_COUNT - 1; i++) {
+            const command *cmd = &commands[i];
+            if (cmp_name(buf, cmd->name)|| (cmd->sh_name != NULL && cmp_name(buf, cmd->sh_name))) {
+                cmd_type = cmd->type;
+                break;
             }
-            if (l > 0xFFFF) {
-                printf("Argument is too big\n");
-                continue;
-            }
-            uint16_t range = l & 0xFFFF;
-            print_memory_range(cpu, cpu->pc, range);
-        } else if (str_prefix(buf, "prev")) {
-            const char *arg = buf + strlen("prev");
-            char *end;
-            long l = strtol(arg, &end, 0);
-            if (l == 0 && arg == end) {
-                printf("Invalid argument\n");
-                continue;
-            }
-            if (l > 0xFFFF) {
-                printf("Argument is too big\n");
-                continue;
-            }
-            uint16_t range = l & 0xFFFF;
-            if (cpu->pc - range < 0) range = cpu->pc; // Avoid going before 0x0000
-            print_memory_range(cpu, cpu->pc - range, range);
-        } else if (strcmp(buf, "status") == 0) {
-            print_cpu_state(cpu);
-        } else if (strcmp(buf, "pc") == 0) {
-            printf("PC : "FMT8"\n", cpu->pc);
-        } else if (strcmp(buf, "sp") == 0) {
-            printf("SP : "FMT16"\n", cpu->sp);
-        } else if (strcmp(buf, "labels") == 0) {
-            printf("%d labels loaded\n", cpu->label_count);
-            for (int i = 0; i < cpu->label_count; ++i) {
-                printf("\t%s: "FMT16"\n", cpu->labels[i].label, cpu->labels[i].operand.value);
-            }
-        } else if (strcmp(buf, "ports") == 0) {
-            for (int i = 0; i < MAX_PORTS; ++i) {
-                printf("\tPORT%c: "FMT8"\n", 'a' + i, cpu->ports[i]);
-            }
+        }
+
+        if (cmd_type == NO_COMMAND) {
+            cmd_type = last_type;
+        }
+
+        last_type = cmd_type;
+        
+        switch (cmd_type) {
+            case REGISTER_A: printf("Register A: "FMT8"\n", cpu->a); break;
+            case REGISTER_B: printf("Register B: "FMT8"\n", cpu->b); break;
+            case REGISTER_D: printf("Register D: "FMT16"\n", cpu->d); break;
+            case NEXT: { 
+                const char *arg = buf + strlen("next");
+                char *end;
+                long l = strtol(arg, &end, 0);
+                if (l == 0 && arg == end) {
+                    if (last_arg != 0xFFFF) {
+                        l = last_arg;
+                    } else {
+                        printf("Invalid argument\n");
+                        continue;
+                    }
+                }
+                if (l > 0xFFFF) {
+                    printf("Argument is too big\n");
+                    continue;
+                }
+                uint16_t range = l & 0xFFFF;
+                last_arg = range;
+                print_memory_range(cpu, cpu->pc, range);
+            } break;
+            case PREVIOUS: {
+                const char *arg = buf + strlen("prev");
+                char *end;
+                long l = strtol(arg, &end, 0);
+                if (l == 0 && arg == end) {
+                    if (last_arg != 0xFFFF) {
+                        l = last_arg;
+                    } else {
+                        printf("Invalid argument\n");
+                        continue;
+                    }
+                }
+                if (l > 0xFFFF) {
+                    printf("Argument is too big\n");
+                    continue;
+                }
+                uint16_t range = l & 0xFFFF;
+                if (cpu->pc - range < 0) range = cpu->pc; // Avoid going before 0x0000
+                last_arg = range;
+                print_memory_range(cpu, cpu->pc - range, range);
+            } break;
+            case STATUS: print_cpu_state(cpu); break;
+            case PC: printf("PC : "FMT8"\n", cpu->pc); break;
+            case SP: printf("SP : "FMT16"\n", cpu->sp); break;
+            case LABELS: {
+                printf("%d labels loaded\n", cpu->label_count);
+                for (int i = 0; i < cpu->label_count; ++i) {
+                    printf("\t%s: "FMT16"\n", cpu->labels[i].label, cpu->labels[i].operand.value);
+                }
+            } break;
+            case PORTS: {
+                for (int i = 0; i < MAX_PORTS; ++i) {
+                    printf("\tPORT%c: "FMT8"\n", 'a' + i, cpu->ports[i]);
+                }
+            } break;
+            case CONTINUE: return;
+            default: break;
         }
     }
 }
