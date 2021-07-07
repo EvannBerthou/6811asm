@@ -140,6 +140,7 @@ typedef struct {
     u8 opcode;
     operand operand;
     u8 immediate_16;
+    u16 extra_value;
 } mnemonic;
 
 typedef struct {
@@ -150,7 +151,8 @@ typedef struct {
     operand_type operands[OPERAND_TYPE_COUNT];
     // The maximum value an operand in immediate addressing mode can have,
     // certain isntruction like 'LDA' can go up to 0xFF but others like 'LDS' can go up to 0xFFFF
-    u16 immediate_16;
+    u8 immediate_16;
+    u8 multiple_operands;
 } instruction;
 
 
@@ -1404,6 +1406,21 @@ void INST_SBA_INH(cpu *cpu) {
     SET_CMP_FLAGS(cpu, a, b);
 }
 
+void INST_BCLR_DIR(cpu *cpu) {
+    u8 addr = NEXT8(cpu);
+    u8 v = cpu->memory[addr];
+    u8 mask = NEXT8(cpu);
+
+
+    u8 result = v & (~mask);
+
+    printf(FMT8" & (~"FMT8") = "FMT8"\n", v, mask, result);
+    cpu->memory[addr] = result;
+
+    SET_FLAGS(cpu, result, NEG | ZERO);
+    cpu->v = 0;
+}
+
 instruction instructions[] = {
     {
         .names = {"ldaa", "lda"}, .name_count = 2,
@@ -2268,7 +2285,13 @@ instruction instructions[] = {
         .func =  { [INHERENT]=INST_SBA_INH },
         .operands = { INHERENT },
     },
-
+    {
+        .names = {"bclr"}, .name_count = 1,
+        .codes = {[DIRECT]=0x15},
+        .func =  { [DIRECT]=INST_BCLR_DIR },
+        .operands = { DIRECT },
+        .multiple_operands = 1,
+    },
 };
 
 #define INSTRUCTION_COUNT ((u8)(sizeof(instructions) / sizeof(instructions[0])))
@@ -2527,12 +2550,12 @@ mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 add
     char *parts[5] = {0};
     u8 nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
-        return (mnemonic) {0, {0, 0, 0}, 0, 0};
+        return (mnemonic) {0, {0, 0, 0}, 0, 0xFFFF};
     }
 
     // If there is only a label
     if (nb_parts == 1 && parts[0] != NULL) {
-        return (mnemonic) {0, {0, 0, 0}, 0, 0};
+        return (mnemonic) {0, {0, 0, 0}, 0, 0xFFFF};
     }
 
     nb_parts--; // Does as if there was no label
@@ -2542,17 +2565,24 @@ mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 add
         ERROR("%s is an undefined (or not implemented) instruction", parts[1]);
     }
 
-    u8 need_operand = inst->operands[0] != NONE && inst->operands[0] != INHERENT;
+    u8 need_operand = (inst->operands[0] != NONE && inst->operands[0] != INHERENT) + inst->multiple_operands;
     if (need_operand != (nb_parts - 1)) { // need an operand but none were given
         ERROR("%s instruction requires %d operand but %d recieved\n", parts[1], need_operand, nb_parts - 1);
     }
 
     mnemonic result = {0};
     result.immediate_16 = inst->immediate_16;
+    result.extra_value = 0xFFFF;
 
     if (inst->multiple_operands) {
-        operand operand = get_operand(parts[2], labels, label_count);
-        (void) operand;
+        directive *directive = get_directive_by_label(parts[3], labels, label_count);
+        u8 extra = 0;
+        if (directive != NULL) {
+            extra = directive->operand.value;
+        } else {
+            extra = get_operand_value(parts[3]);
+        }
+        result.extra_value = extra;
     }
 
     if (need_operand) {
@@ -2597,6 +2627,9 @@ u8 add_mnemonic_to_memory(cpu *cpu, mnemonic *m, u16 addr) {
             cpu->memory[addr + written++] = (m->operand.value >> 8) & 0xFF;
         }
         cpu->memory[addr + written++] = m->operand.value & 0xFF;
+        if (m->extra_value != 0xFFFF) {
+            cpu->memory[addr + written++] = m->extra_value & 0xFF;
+        }
     }
     return written;
 }
