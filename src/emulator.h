@@ -2316,12 +2316,11 @@ u8 is_str_in_parts(const char *str, char **parts, u8 parts_count) {
 
 const char *strdup(const char *base) {
     size_t len = strlen(base);
-    char *str = malloc(len + 1 * sizeof(char));
+    char *str = malloc(len + 1);
     if (str == NULL) {
-        ERROR("%s", "calloc");
+        ERROR("%s", "malloc");
     }
-    str[len] = '\0';
-    return memcpy(str, base, len);
+    return memcpy(str, base, len+1);
 }
 
 u8 is_valid_operand_type(instruction *inst, operand_type type) {
@@ -2480,35 +2479,40 @@ u16 bin_str_to_u16(const char *str) {
     return convert_str_from_base(str, 2);
 }
 
-operand get_operand_value(const char *str, directive *labels, u8 label_count) {
-    directive *directive = NULL;
-    if (labels) {
-        directive = get_directive_by_label(str, labels, label_count);
+u16 str_to_u16(const char *str) {
+    if (str[1] == '$') { // Hexadecimal
+        return hex_str_to_u16(str);
+    } else if (str[1] == '%') { // Binary
+        return bin_str_to_u16(str);
+    } else if (str[1] >= '0' && str[1] <= '9') { // Decimal
+        return dec_str_to_u16(str);
     }
 
-    if (directive != NULL) {
-        return (operand) {directive->operand.value, directive->operand.type, 1};
-    }
+    ERROR("%s is not a valid operand", str);
+}
 
+u16 get_operand_value(const char *str) {
     u8 offset = str[0] == '<' || str[0] == '>';
     u16 operand_value = 0;
     if (offset == 0 && str[0] == '#') {
-        if (str[1] == '$') { // Hexadecimal
-            operand_value = hex_str_to_u16(str);
-        } else if (str[1] == '%') { // Binary
-            operand_value = bin_str_to_u16(str);
-        } else if (str[1] >= '0' && str[1] <= '9') { // Decimal
-            operand_value = dec_str_to_u16(str);
-        } else { // In case there is a wrong prefix, like #:, which does not exists
-            ERROR("%s %s", str, "is not a valid operand");
-        }
+        operand_value = str_to_u16(str);
     } else if (str[offset] == '$') {
         operand_value = convert_str_from_base(str + offset + 1, 16);
     } else {
         ERROR("Invalid prefix for operand %s", str);
     }
+    return operand_value;
+}
 
-    // Convert to a number
+operand get_operand(const char *str, directive *labels, u8 label_count) {
+    if (labels) {
+        directive *directive = get_directive_by_label(str, labels, label_count);
+        if (directive != NULL) {
+            return (operand) {directive->operand.value, directive->operand.type, 1};
+        }
+    }
+
+    u16 operand_value = get_operand_value(str);
     operand_type type = get_operand_type(str);
     if (type == DIRECT && operand_value > 0xFF) {
         ERROR("Direct addressing mode only allows value up to 0xFF, recieved "FMT16, operand_value);
@@ -2523,12 +2527,12 @@ mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 add
     char *parts[5] = {0};
     u8 nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
-        return (mnemonic) {0, {0, 0, 0}, 0};
+        return (mnemonic) {0, {0, 0, 0}, 0, 0};
     }
 
     // If there is only a label
     if (nb_parts == 1 && parts[0] != NULL) {
-        return (mnemonic) {0, {0, 0, 0}, 0};
+        return (mnemonic) {0, {0, 0, 0}, 0, 0};
     }
 
     nb_parts--; // Does as if there was no label
@@ -2545,9 +2549,17 @@ mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 add
 
     mnemonic result = {0};
     result.immediate_16 = inst->immediate_16;
+
+    if (inst->multiple_operands) {
+        operand operand = get_operand(parts[2], labels, label_count);
+        (void) operand;
+    }
+
     if (need_operand) {
-        result.operand = get_operand_value(parts[2], labels, label_count);
+        result.operand = get_operand(parts[2], labels, label_count);
+        // For branches instructions
         if (inst->operands[0] == RELATIVE) {
+            // From label or not
             u16 operand_value = result.operand.value;
             if (result.operand.from_label) {
                 i8 offset = result.operand.value - addr - 2;
@@ -2601,14 +2613,14 @@ directive line_to_directive(char *line, directive *labels, u8 label_count) {
         if (nb_parts != 3) {
             ERROR("%s", "equ format : <LABEL> equ <VALUE>");
         }
-        operand operand = get_operand_value(parts[2], labels, label_count);
+        operand operand = get_operand(parts[2], labels, label_count);
         return (directive) {strdup(parts[0]), NULL, {operand.value, operand.type, operand.from_label}, CONSTANT};
     }
     if (is_str_in_parts("org", parts, nb_parts)) {
         if (nb_parts != 3) {
             ERROR("%s", "ORG format : [LABEL] ORG <ADDR> ($<VALUE>)");
         }
-        operand operand = get_operand_value(parts[2], labels, label_count);
+        operand operand = get_operand(parts[2], labels, label_count);
         if (operand.type == NONE) {
             ERROR("%s", "No operand found\n");
         }
