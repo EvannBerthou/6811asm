@@ -55,6 +55,13 @@ typedef struct {
     directive_type type;
 } directive;
 
+typedef directive label_list[MAX_LABELS];
+
+typedef struct {
+    label_list label;
+    u8 count;
+} labels;
+
 typedef struct {
     union {
         struct {
@@ -84,8 +91,10 @@ typedef struct {
     u8 ports[MAX_PORTS];
     u8 ddrx[MAX_PORTS];
 
-    directive labels[MAX_LABELS];
-    u8 label_count;
+    union {
+        label_list label; // With this trick you can access
+        labels labels;
+    };
 } cpu;
 
 #endif // EMUALTOR_H
@@ -2302,8 +2311,8 @@ instruction instructions[] = {
 *****************************/
 
 void free_cpu(cpu *cpu) {
-    for (u8 i = 0; i < cpu->label_count; ++i) {
-        free((void *)cpu->labels[i].label);
+    for (u8 i = 0; i < cpu->labels.count; ++i) {
+        free((void *)cpu->label[i].label);
     }
 }
 
@@ -2364,10 +2373,10 @@ int str_empty(const char *str) {
     return 1;
 }
 
-directive *get_directive_by_label(const char *label, directive *labels, u8 label_count) {
-    for (u8 i = 0; i < label_count; ++i) {
-        if (strcmp(label, labels[i].label) == 0) {
-            return &labels[i];
+directive *get_directive_by_label(const char *label, labels *labels) {
+    for (u8 i = 0; i < labels->count; ++i) {
+        if (strcmp(label, labels->label[i].label) == 0) {
+            return &labels->label[i];
         }
     }
     return NULL;
@@ -2527,9 +2536,9 @@ u16 get_operand_value(const char *str) {
     return operand_value;
 }
 
-operand get_operand(const char *str, directive *labels, u8 label_count) {
+operand get_operand(const char *str, labels *labels) {
     if (labels) {
-        directive *directive = get_directive_by_label(str, labels, label_count);
+        directive *directive = get_directive_by_label(str, labels);
         if (directive != NULL) {
             return (operand) {directive->operand.value, directive->operand.type, 1};
         }
@@ -2546,7 +2555,7 @@ operand get_operand(const char *str, directive *labels, u8 label_count) {
     return (operand) {operand_value, type, 0};
 }
 
-mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 addr) {
+mnemonic line_to_mnemonic(char *line, labels *labels, u16 addr) {
     char *parts[5] = {0};
     u8 nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
@@ -2575,7 +2584,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 add
     result.extra_value = 0xFFFF;
 
     if (inst->multiple_operands) {
-        directive *directive = get_directive_by_label(parts[3], labels, label_count);
+        directive *directive = get_directive_by_label(parts[3], labels);
         u8 extra = 0;
         if (directive != NULL) {
             extra = directive->operand.value;
@@ -2586,7 +2595,7 @@ mnemonic line_to_mnemonic(char *line, directive *labels, u8 label_count, u16 add
     }
 
     if (need_operand) {
-        result.operand = get_operand(parts[2], labels, label_count);
+        result.operand = get_operand(parts[2], labels);
         // For branches instructions
         if (inst->operands[0] == RELATIVE) {
             // From label or not
@@ -2634,7 +2643,7 @@ u8 add_mnemonic_to_memory(cpu *cpu, mnemonic *m, u16 addr) {
     return written;
 }
 
-directive line_to_directive(char *line, directive *labels, u8 label_count) {
+directive line_to_directive(char *line, labels *labels) {
     char *parts[5] = {0};
     u8 nb_parts = split_by_space(line, parts, 5);
     if (nb_parts == 0) {
@@ -2646,14 +2655,14 @@ directive line_to_directive(char *line, directive *labels, u8 label_count) {
         if (nb_parts != 3) {
             ERROR("%s", "equ format : <LABEL> equ <VALUE>");
         }
-        operand operand = get_operand(parts[2], labels, label_count);
+        operand operand = get_operand(parts[2], labels);
         return (directive) {strdup(parts[0]), NULL, {operand.value, operand.type, operand.from_label}, CONSTANT};
     }
     if (is_str_in_parts("org", parts, nb_parts)) {
         if (nb_parts != 3) {
             ERROR("%s", "ORG format : [LABEL] ORG <ADDR> ($<VALUE>)");
         }
-        operand operand = get_operand(parts[2], labels, label_count);
+        operand operand = get_operand(parts[2], labels);
         if (operand.type == NONE) {
             ERROR("%s", "No operand found\n");
         }
@@ -2692,14 +2701,14 @@ void load_program(cpu *cpu, const char *file_path) {
         }
 
         str_tolower(buf);
-        directive d = line_to_directive(buf, cpu->labels, cpu->label_count);
+        directive d = line_to_directive(buf, &cpu->labels);
         if (d.type == CONSTANT) {
-            cpu->labels[cpu->label_count++] = d;
+            cpu->label[cpu->labels.count++] = d;
         } else if (d.type == ORG) {
             addr = d.operand.value;
         } else if (d.type == LABEL) {
             d.operand.value = addr;
-            cpu->labels[cpu->label_count++] = d;
+            cpu->label[cpu->labels.count++] = d;
         }
 
         if (d.opcode_str != NULL) {
@@ -2735,7 +2744,7 @@ void load_program(cpu *cpu, const char *file_path) {
         }
         str_tolower(buf);
         if (is_directive(buf)) {
-            directive d = line_to_directive(buf, cpu->labels, cpu->label_count);
+            directive d = line_to_directive(buf, &cpu->labels);
             if (d.type == ORG) {
                 addr = d.operand.value;
                 if (cpu->pc == 0x0) {
@@ -2745,7 +2754,7 @@ void load_program(cpu *cpu, const char *file_path) {
             free((void*) d.label);
             continue;
         }
-        mnemonic m = line_to_mnemonic(buf, cpu->labels, cpu->label_count, addr);
+        mnemonic m = line_to_mnemonic(buf, &cpu->labels, addr);
         if (m.opcode == 0) {
             continue;
         }

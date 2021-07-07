@@ -172,9 +172,9 @@ void handle_commands(cpu *cpu) {
             case PC: printf("PC : "FMT8"\n", cpu->pc); break;
             case SP: printf("SP : "FMT16"\n", cpu->sp); break;
             case LABELS: {
-                printf("%d labels loaded\n", cpu->label_count);
-                for (int i = 0; i < cpu->label_count; ++i) {
-                    printf("\t%s: "FMT16"\n", cpu->labels[i].label, cpu->labels[i].operand.value);
+                printf("%d labels loaded\n", cpu->labels.count);
+                for (int i = 0; i < cpu->labels.count; ++i) {
+                    printf("\t%s: "FMT16"\n", cpu->label[i].label, cpu->label[i].operand.value);
                 }
             } break;
             case PORTS: {
